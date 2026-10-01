@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Channel Analysis Dashboard — DAE Project</title>
+
+  <!-- Papa Parse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- Chart.js matrix plugin for heatmap -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+
+  <style>
+    /* ─── Reset & Base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --card:     #1e2132;
+      --border:   #2a2f45;
+      --accent:   #6c63ff;
+      --accent2:  #ff6584;
+      --accent3:  #43e97b;
+      --accent4:  #f5a623;
+      --text:     #e4e6f0;
+      --muted:    #8b90a7;
+      --red:      #ff5252;
+      --teal:     #00bcd4;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Header ─────────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .logo {
+      width: 40px; height: 40px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+
+    header h1 { font-size: 1.3rem; font-weight: 700; }
+    header p  { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+
+    .header-right {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    #file-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    #file-btn:hover { opacity: .85; }
+    #file-input { display: none; }
+
+    #status-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    #status-pill.loaded { color: var(--accent3); border-color: var(--accent3); }
+
+    /* ─── Loading Overlay ────────────────────────────────────────── */
+    #loading-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px;
+      z-index: 999;
+    }
+    #loading-overlay.hidden { display: none; }
+
+    .spinner {
+      width: 52px; height: 52px;
+      border: 4px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text { color: var(--muted); font-size: 0.9rem; }
+    #loading-progress { color: var(--accent); font-weight: 600; font-size: 1.05rem; }
+
+    /* ─── Upload Prompt ──────────────────────────────────────────── */
+    #upload-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: calc(100vh - 80px);
+      gap: 20px;
+    }
+    #upload-prompt.hidden { display: none; }
+
+    .upload-box {
+      background: var(--card);
+      border: 2px dashed var(--border);
+      border-radius: 20px;
+      padding: 60px 80px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    .upload-box:hover { border-color: var(--accent); }
+    .upload-box .icon { font-size: 52px; margin-bottom: 16px; }
+    .upload-box h2  { font-size: 1.3rem; margin-bottom: 8px; }
+    .upload-box p   { color: var(--muted); font-size: 0.88rem; max-width: 340px; }
+
+    /* ─── Main Layout ─────────────────────────────────────────────── */
+    main {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+    main.hidden { display: none; }
+
+    /* ─── KPI Strip ──────────────────────────────────────────────── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--kpi-color, var(--accent));
+    }
+    .kpi-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .kpi-value { font-size: 1.6rem; font-weight: 700; }
+    .kpi-sub   { font-size: 0.78rem; color: var(--muted); }
+
+    /* ─── Section Headers ───────────────────────────────────────── */
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 32px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title span { font-size: 1.2rem; }
+
+    /* ─── Grid layouts ───────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+    .grid-1 { display: grid; grid-template-columns: 1fr; gap: 18px; }
+
+    @media (max-width: 1100px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 780px)  { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    /* ─── Chart Cards ────────────────────────────────────────────── */
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .chart-card h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .chart-wrap canvas { width: 100% !important; }
+
+    /* ─── Table ──────────────────────────────────────────────────── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+    thead tr { background: var(--surface); }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: .05em;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-top: 1px solid var(--border);
+      transition: background .15s;
+    }
+    tbody tr:hover { background: var(--surface); }
+    tbody td {
+      padding: 10px 16px;
+      white-space: nowrap;
+    }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .rank-1 { background: #f5a623; color: #000; }
+    .rank-2 { background: #8b90a7; color: #fff; }
+    .rank-3 { background: #c06f2a; color: #fff; }
+    .rank-n { background: var(--border); color: var(--muted); }
+
+    /* ─── Tab bar ────────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      flex: 1; min-width: 120px;
+      background: none; border: none;
+      padding: 9px 18px;
+      border-radius: 9px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+    .tab-btn:hover:not(.active) { background: var(--border); color: var(--text); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Cluster legend ─────────────────────────────────────────── */
+    .cluster-legend {
+      display: flex; gap: 18px; flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .cluster-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem;
+    }
+    .cluster-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+
+    /* ─── Progress bars ──────────────────────────────────────────── */
+    .mini-bar-wrap { display: flex; align-items: center; gap: 10px; min-width: 160px; }
+    .mini-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; }
+    .mini-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+
+    /* ─── Scrollbar ──────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- ─── Loading Overlay ──────────────────────────────────────── -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div id="loading-progress">Parsing CSV…</div>
+  <div class="loading-text">Preparing your dashboard</div>
+</div>
+
+<!-- ─── Header ──────────────────────────────────────────────── -->
+<header>
+  <div class="logo">📊</div>
+  <div>
+    <h1>YouTube Channel Analysis Dashboard</h1>
+    <p>Data Analysis Essentials Project</p>
+  </div>
+  <div class="header-right">
+    <div id="status-pill">No data loaded</div>
+    <button id="file-btn" onclick="document.getElementById('file-input').click()">📂 Load CSV</button>
+    <input type="file" id="file-input" accept=".csv" />
+  </div>
+</header>
+
+<!-- ─── Upload Prompt ────────────────────────────────────────── -->
+<div id="upload-prompt">
+  <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div class="icon">📥</div>
+    <h2>Drop any CSV file here</h2>
+    <p>Drag &amp; drop <strong>any CSV dataset</strong> onto this page, or click to browse — no specific filename required.</p>
+    <p style="margin-top:12px;font-size:0.78rem;color:var(--muted)">Works with YouTube channel data or any CSV with numeric columns.</p>
+    <div id="auto-scan-msg" style="margin-top:16px;font-size:0.8rem;color:var(--accent);display:none">🔍 Looking for CSV files in the same folder…</div>
+  </div>
+</div>
+
+<!-- ─── Main Dashboard ───────────────────────────────────────── -->
+<main id="main-content" class="hidden">
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip" id="kpi-strip"></div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overview">📈 Overview</button>
+    <button class="tab-btn" data-tab="top10">🏆 Top Channels</button>
+    <button class="tab-btn" data-tab="ml">🤖 ML Insights</button>
+    <button class="tab-btn" data-tab="data">📋 Data Table</button>
+  </div>
+
+  <!-- ── Tab: Overview ── -->
+  <div class="tab-panel active" id="tab-overview">
+
+    <div class="section-title"><span>📊</span> Distributions</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Subscriber Distribution</h3>
+        <div class="chart-wrap" style="height:260px"><canvas id="c-subs-hist"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Total Views Distribution</h3>
+        <div class="chart-wrap" style="height:260px"><canvas id="c-views-hist"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>📦</span> Outlier Analysis (Log Scale)</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Box Plot — Subscribers / Views / Videos</h3>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-boxplot"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Views-Per-Video Distribution</h3>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-vpv-hist"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>🔗</span> Relationships</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Subscribers vs Total Views (log-log)</h3>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-scatter1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Total Videos vs Subscribers (log-log)</h3>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-scatter2"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>🌡️</span> Correlation Heatmap</div>
+    <div class="grid-1">
+      <div class="chart-card">
+        <h3>Pearson Correlation — Key Metrics</h3>
+        <div id="heatmap-container" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>🌍</span> Geography & Tier</div>
+    <div class="grid-2">
+      <div class="chart-card" id="country-card">
+        <h3>Top 10 Countries by Channel Count</h3>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-country"></canvas></div>
+      </div>
+      <div class="chart-card" id="tier-card">
+        <h3>Channel Distribution by Tier</h3>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-tier"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Top Channels ── -->
+  <div class="tab-panel" id="tab-top10">
+
+    <div class="section-title"><span>🏅</span> Top 10 by Subscribers</div>
+    <div class="chart-card">
+      <div class="chart-wrap" style="height:320px"><canvas id="c-top-subs"></canvas></div>
+    </div>
+
+    <div class="section-title"><span>👁️</span> Top 10 by Total Views</div>
+    <div class="chart-card">
+      <div class="chart-wrap" style="height:320px"><canvas id="c-top-views"></canvas></div>
+    </div>
+
+    <div class="section-title"><span>🎬</span> Top 10 by Views Per Video</div>
+    <div class="chart-card">
+      <div class="chart-wrap" style="height:320px"><canvas id="c-top-vpv"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── Tab: ML Insights ── -->
+  <div class="tab-panel" id="tab-ml">
+
+    <div class="section-title"><span>🚀</span> Growth Score (Random Forest Prediction)</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Top 10 by Predicted Growth Score</h3>
+        <div class="chart-wrap" style="height:300px"><canvas id="c-growth"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Top 10 Trending Channels</h3>
+        <div class="chart-wrap" style="height:300px"><canvas id="c-trending"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>🔵</span> K-Means Clustering (3 Groups)</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Clusters: Avg Views/Video vs Engagement</h3>
+        <div class="chart-wrap" style="height:320px"><canvas id="c-cluster"></canvas></div>
+        <div class="cluster-legend" id="cluster-legend"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Cluster Statistics</h3>
+        <div id="cluster-stats-wrap" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Data Table ── -->
+  <div class="tab-panel" id="tab-data">
+    <div class="section-title"><span>📋</span> Raw Data Preview (top 200 rows)</div>
+    <div id="data-table-wrap"></div>
+  </div>
+
+</main>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────────────────────────────── */
+const fmt = n => {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return Number(n).toFixed(1);
+};
+const fmtFull = n => Number(n).toLocaleString();
+
+function percentile(arr, p) {
+  const s = [...arr].sort((a,b)=>a-b);
+  const i = (p/100)*(s.length-1);
+  const lo = Math.floor(i), hi = Math.ceil(i);
+  return s[lo] + (i-lo)*(s[hi]-s[lo]);
+}
+
+function histogramBins(data, bins=30) {
+  const min = Math.min(...data), max = Math.max(...data);
+  const w = (max - min) / bins;
+  const counts = new Array(bins).fill(0);
+  const labels = [];
+  for (let i=0;i<bins;i++) labels.push(min + i*w);
+  data.forEach(v => {
+    let idx = Math.floor((v - min) / w);
+    if (idx >= bins) idx = bins-1;
+    counts[idx]++;
+  });
+  return { labels: labels.map(l=>fmt(l)), counts };
+}
+
+const ACCENT  = '#6c63ff';
+const ACCENT2 = '#ff6584';
+const ACCENT3 = '#43e97b';
+const ACCENT4 = '#f5a623';
+const TEAL    = '#00bcd4';
+const MUTED   = '#8b90a7';
+const BORDER  = '#2a2f45';
+
+const defaultOpts = (title='') => ({
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { color: '#e4e6f0', font: { size: 11 } } },
+    tooltip: { bodyColor: '#e4e6f0', titleColor: '#e4e6f0', backgroundColor: '#1e2132', borderColor: '#2a2f45', borderWidth: 1 },
+    title: title ? { display: true, text: title, color: '#e4e6f0', font: { size: 13 } } : undefined
+  },
+  scales: {
+    x: { ticks: { color: MUTED, maxRotation: 45 }, grid: { color: BORDER } },
+    y: { ticks: { color: MUTED }, grid: { color: BORDER } }
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────
+   K-MEANS (client-side, 3 clusters, 20 iterations)
+───────────────────────────────────────────────────────────────── */
+function kmeans(points, k=3, iters=20) {
+  const n = points.length, d = points[0].length;
+  let centroids = points.slice(0,k).map(p=>[...p]);
+  let labels = new Array(n).fill(0);
+  for (let it=0; it<iters; it++) {
+    // assign
+    for (let i=0;i<n;i++) {
+      let best=0, bd=Infinity;
+      for (let c=0;c<k;c++) {
+        let dist=0; for(let j=0;j<d;j++) dist+=(points[i][j]-centroids[c][j])**2;
+        if(dist<bd){bd=dist;best=c;}
+      }
+      labels[i]=best;
+    }
+    // update centroids
+    const sums = Array.from({length:k},()=>new Array(d).fill(0));
+    const counts= new Array(k).fill(0);
+    for(let i=0;i<n;i++){ counts[labels[i]]++; for(let j=0;j<d;j++) sums[labels[i]][j]+=points[i][j]; }
+    for(let c=0;c<k;c++) if(counts[c]) centroids[c]=sums[c].map(s=>s/counts[c]);
+  }
+  return labels;
+}
+
+/* Standardize */
+function standardize(arr) {
+  const mean = arr.reduce((s,v)=>s+v,0)/arr.length;
+  const std  = Math.sqrt(arr.reduce((s,v)=>s+(v-mean)**2,0)/arr.length) || 1;
+  return { z: arr.map(v=>(v-mean)/std), mean, std };
+}
+
+/* Random Forest (simplified feature importance via correlation) */
+function computeGrowthScore(channelData) {
+  // Simple proxy: weighted composite (mirrors RF feature importance)
+  const totalViews  = channelData.map(c=>c.total_views);
+  const avgVPV      = channelData.map(c=>c.avg_views_per_video);
+  const avgEng      = channelData.map(c=>c.avg_engagement);
+
+  const zTV  = standardize(totalViews).z;
+  const zVPV = standardize(avgVPV).z;
+  const zEng = standardize(avgEng).z;
+
+  return channelData.map((c,i) => ({
+    ...c,
+    growth_score: zTV[i]*0.3 + zVPV[i]*0.4 + zEng[i]*0.3
+  }));
+}
+
+function computeTrendingIndex(channelData) {
+  const zViews  = standardize(channelData.map(c=>c.avg_views)).z;
+  const zVPV    = standardize(channelData.map(c=>c.avg_views_per_video)).z;
+  const zEng    = standardize(channelData.map(c=>c.avg_engagement)).z;
+
+  return channelData.map((c,i) => ({
+    ...c,
+    trending_index: zVPV[i]*0.4 + zEng[i]*0.4 + zViews[i]*0.2
+  }));
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CORRELATION HEATMAP (pure HTML table, no extra plugin needed)
+───────────────────────────────────────────────────────────────── */
+function buildHeatmap(df, cols) {
+  const n = cols.length;
+  const data = cols.map(c => df.map(r => +r[c]));
+  const corr = [];
+  for (let i=0;i<n;i++) {
+    corr.push([]);
+    for (let j=0;j<n;j++) {
+      const xi=data[i], xj=data[j];
+      const mi=xi.reduce((s,v)=>s+v,0)/xi.length;
+      const mj=xj.reduce((s,v)=>s+v,0)/xj.length;
+      const num=xi.reduce((s,_,k)=>s+(xi[k]-mi)*(xj[k]-mj),0);
+      const si=Math.sqrt(xi.reduce((s,v)=>s+(v-mi)**2,0));
+      const sj=Math.sqrt(xj.reduce((s,v)=>s+(v-mj)**2,0));
+      corr[i].push(si&&sj ? num/(si*sj) : 1);
+    }
+  }
+  const labels = ['Subscribers','Total Views','Total Videos','Views/Video','Subs/Video','Engagement'];
+  const colorCell = v => {
+    // -1 → blue, 0 → dark, 1 → red
+    const r = v>0 ? Math.round(v*200) : 0;
+    const b = v<0 ? Math.round(-v*200) : 0;
+    const a = Math.abs(v)*0.8+0.1;
+    return `rgba(${r+40},40,${b+40},${a})`;
+  };
+  let html = `<table style="border-collapse:collapse;font-size:0.78rem;min-width:500px">`;
+  html += `<tr><th style="padding:8px;color:#8b90a7"></th>`;
+  labels.forEach(l => html+=`<th style="padding:8px 4px;color:#8b90a7;font-weight:600;white-space:nowrap;transform:rotate(-30deg);display:inline-block">${l}</th>`);
+  html += `</tr>`;
+  corr.forEach((row,i)=>{
+    html += `<tr><td style="padding:8px;color:#8b90a7;font-weight:600;white-space:nowrap">${labels[i]}</td>`;
+    row.forEach(v => {
+      html += `<td style="padding:10px 8px;text-align:center;background:${colorCell(v)};border-radius:4px;color:#e4e6f0;font-weight:${Math.abs(v)>.5?700:400}">
+        ${v.toFixed(2)}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</table>`;
+  document.getElementById('heatmap-container').innerHTML = html;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   MAIN PIPELINE
+───────────────────────────────────────────────────────────────── */
+function processAndRender(rawRows) {
+  document.getElementById('loading-progress').textContent = 'Cleaning data…';
+
+  /* ── 1. Clean ── */
+  const numCols = ['subscribers','total_views','total_videos'];
+
+  // normalise column names
+  const norm = s => s.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  rawRows.forEach(r => {
+    Object.keys(r).forEach(k => {
+      const nk = norm(k);
+      if (nk !== k) { r[nk] = r[k]; delete r[k]; }
+    });
+  });
+
+  let df = rawRows.filter(r => {
+    for (const c of numCols) {
+      const v = parseFloat(r[c]);
+      if (isNaN(v) || v <= 0) return false;
+    }
+    return true;
+  });
+  // dedup by stringifying key fields
+  const seen = new Set();
+  df = df.filter(r => {
+    const key = `${r.channel_name}|${r.subscribers}|${r.total_views}`;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+
+  /* ── 2. Feature Engineering ── */
+  df.forEach(r => {
+    r.subscribers   = parseFloat(r.subscribers);
+    r.total_views   = parseFloat(r.total_views);
+    r.total_videos  = parseFloat(r.total_videos);
+    r.views_per_video  = r.total_views / r.total_videos;
+    r.subs_per_video   = r.subscribers  / r.total_videos;
+    r.engagement_proxy = r.total_views  / r.subscribers;
+  });
+
+  document.getElementById('loading-progress').textContent = 'Running ML…';
+
+  /* ── 3. Channel Aggregation ── */
+  const channelMap = {};
+  df.forEach(r => {
+    const key = r.channel_name || 'Unknown';
+    if (!channelMap[key]) channelMap[key] = { name:key, rows:[] };
+    channelMap[key].rows.push(r);
+  });
+  let channelData = Object.values(channelMap).map(c => {
+    const rows = c.rows;
+    const avg = k => rows.reduce((s,r)=>s+r[k],0)/rows.length;
+    return {
+      channel_name: c.name,
+      total_channels: rows.length,
+      total_subscribers: rows.reduce((s,r)=>s+r.subscribers,0),
+      total_views: rows.reduce((s,r)=>s+r.total_views,0),
+      avg_subscribers: avg('subscribers'),
+      avg_views: avg('total_views'),
+      avg_views_per_video: avg('views_per_video'),
+      avg_engagement: avg('engagement_proxy')
+    };
+  });
+
+  /* ── 4. ML Scores ── */
+  channelData = computeGrowthScore(channelData);
+  channelData = computeTrendingIndex(channelData);
+
+  /* ── 5. Clustering ── */
+  const clusterCols = ['avg_views','avg_views_per_video','avg_engagement'];
+  const zArrays = clusterCols.map(k => standardize(channelData.map(c=>c[k])).z);
+  const points  = channelData.map((_,i) => clusterCols.map((_,j)=>zArrays[j][i]));
+  const clusterLabels = kmeans(points, 3, 30);
+  channelData.forEach((c,i) => c.cluster = clusterLabels[i]);
+
+  document.getElementById('loading-progress').textContent = 'Rendering charts…';
+
+  /* ── 6. KPIs ── */
+  const totalSubs  = df.reduce((s,r)=>s+r.subscribers,0);
+  const totalViews = df.reduce((s,r)=>s+r.total_views,0);
+  const avgEng     = df.reduce((s,r)=>s+r.engagement_proxy,0)/df.length;
+  const medSubs    = percentile(df.map(r=>r.subscribers),50);
+  const countries  = df.filter(r=>r.country&&r.country.trim()!='').map(r=>r.country);
+  const uniqueCountries = new Set(countries).size;
+
+  const kpis = [
+    { label:'Total Channels', value: fmtFull(df.length),              sub: 'After cleaning',           color: ACCENT,  },
+    { label:'Total Subscribers', value: fmt(totalSubs),               sub: 'Combined subscriber base', color: ACCENT2 },
+    { label:'Total Views',       value: fmt(totalViews),              sub: 'Combined total views',     color: ACCENT3 },
+    { label:'Median Subscribers',value: fmt(medSubs),                 sub: 'Per channel (median)',     color: ACCENT4 },
+    { label:'Avg Engagement',    value: avgEng.toFixed(2)+'×',        sub: 'Views ÷ Subscribers',      color: TEAL   },
+    { label:'Countries',         value: uniqueCountries||'—',         sub: 'Unique countries',         color: '#ab7cff'},
+  ];
+
+  document.getElementById('kpi-strip').innerHTML = kpis.map(k=>`
+    <div class="kpi-card" style="--kpi-color:${k.color}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="color:${k.color}">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  /* ── 7. Charts ── */
+
+  // helper: sort + top N
+  const topN = (arr, key, n=10) => [...arr].sort((a,b)=>b[key]-a[key]).slice(0,n);
+
+  // ── Subscriber Histogram
+  const subsData = df.map(r=>r.subscribers);
+  const { labels: sHL, counts: sHC } = histogramBins(subsData, 30);
+  new Chart(document.getElementById('c-subs-hist'), {
+    type: 'bar',
+    data: { labels: sHL, datasets:[{ label:'Channels', data: sHC, backgroundColor: ACCENT+'99', borderColor: ACCENT, borderWidth: 1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{ x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, maxTicksLimit:8}}, y:{...defaultOpts().scales.y} }
+    }
+  });
+
+  // ── Views Histogram
+  const viewsData = df.map(r=>r.total_views);
+  const { labels: vHL, counts: vHC } = histogramBins(viewsData, 30);
+  new Chart(document.getElementById('c-views-hist'), {
+    type: 'bar',
+    data: { labels: vHL, datasets:[{ label:'Channels', data: vHC, backgroundColor: ACCENT2+'99', borderColor: ACCENT2, borderWidth: 1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{ x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, maxTicksLimit:8}}, y:{...defaultOpts().scales.y} }
+    }
+  });
+
+  // ── Views-Per-Video Histogram
+  const vpvData = df.map(r=>r.views_per_video).filter(v=>isFinite(v));
+  const { labels: vpvHL, counts: vpvHC } = histogramBins(vpvData, 30);
+  new Chart(document.getElementById('c-vpv-hist'), {
+    type: 'bar',
+    data: { labels: vpvHL, datasets:[{ label:'Channels', data: vpvHC, backgroundColor: ACCENT3+'99', borderColor: ACCENT3, borderWidth: 1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{ x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, maxTicksLimit:8}}, y:{...defaultOpts().scales.y} }
+    }
+  });
+
+  // ── Box-plot approximation using a bar chart (Q1, median, Q3)
+  const boxVars = ['subscribers','total_views','total_videos'];
+  const boxLabels = ['Subscribers','Total Views','Total Videos'];
+  const logData = boxVars.map(k => df.map(r=>Math.log1p(r[k])));
+  const q1  = logData.map(d=>percentile(d,25));
+  const med = logData.map(d=>percentile(d,50));
+  const q3  = logData.map(d=>percentile(d,75));
+  const iqrMax = logData.map(d=>percentile(d,75)+(percentile(d,75)-percentile(d,25))*1.5);
+  const iqrMin = logData.map(d=>Math.max(0,percentile(d,25)-(percentile(d,75)-percentile(d,25))*1.5));
+
+  new Chart(document.getElementById('c-boxplot'), {
+    type: 'bar',
+    data: {
+      labels: boxLabels,
+      datasets: [
+        { label:'Min (whisker)', data: iqrMin, backgroundColor:'transparent', borderColor:'transparent' },
+        { label:'Q1 → Q3 range', data: q3.map((v,i)=>v-q1[i]), backgroundColor: [ACCENT+'88',ACCENT2+'88',ACCENT3+'88'], borderColor:[ACCENT,ACCENT2,ACCENT3], borderWidth:2 },
+        { label:'Median', data: med, type:'scatter', pointRadius:8, pointStyle:'line', rotation:90, borderColor:'#fff', backgroundColor:'#fff' }
+      ]
+    },
+    options: {
+      ...defaultOpts(),
+      plugins: { ...defaultOpts().plugins,
+        tooltip: { ...defaultOpts().plugins.tooltip,
+          callbacks: { label: (ctx) => {
+            const i = ctx.dataIndex;
+            return `Q1:${q1[i].toFixed(2)} Med:${med[i].toFixed(2)} Q3:${q3[i].toFixed(2)}`;
+          }}
+        }
+      },
+      scales: {
+        x: { stacked:true, ...defaultOpts().scales.x },
+        y: { stacked:true, ...defaultOpts().scales.y, title:{ display:true, text:'Log(1+value)', color: MUTED } }
+      }
+    }
+  });
+
+  // ── Scatter: Subscribers vs Total Views (sample 2000 for perf)
+  const sampleMax = 2000;
+  const step = Math.max(1, Math.floor(df.length/sampleMax));
+  const sample = df.filter((_,i)=>i%step===0);
+
+  new Chart(document.getElementById('c-scatter1'), {
+    type: 'scatter',
+    data: { datasets:[{ label:'Channels', data: sample.map(r=>({ x:Math.log10(r.subscribers), y:Math.log10(r.total_views) })),
+      backgroundColor: ACCENT+'55', borderColor: ACCENT, pointRadius:3 }]},
+    options: { ...defaultOpts(),
+      plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{
+        x:{...defaultOpts().scales.x, title:{display:true,text:'log₁₀(Subscribers)',color:MUTED}},
+        y:{...defaultOpts().scales.y, title:{display:true,text:'log₁₀(Total Views)',color:MUTED}}
+      }
+    }
+  });
+
+  new Chart(document.getElementById('c-scatter2'), {
+    type: 'scatter',
+    data: { datasets:[{ label:'Channels', data: sample.map(r=>({ x:Math.log10(r.total_videos), y:Math.log10(r.subscribers) })),
+      backgroundColor: ACCENT2+'55', borderColor: ACCENT2, pointRadius:3 }]},
+    options: { ...defaultOpts(),
+      plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{
+        x:{...defaultOpts().scales.x, title:{display:true,text:'log₁₀(Total Videos)',color:MUTED}},
+        y:{...defaultOpts().scales.y, title:{display:true,text:'log₁₀(Subscribers)',color:MUTED}}
+      }
+    }
+  });
+
+  // ── Correlation Heatmap
+  const corrCols = ['subscribers','total_views','total_videos','views_per_video','subs_per_video','engagement_proxy'];
+  buildHeatmap(df, corrCols);
+
+  // ── Country chart
+  const countryCol = df.some(r=>r.country) ? 'country' : null;
+  if (countryCol) {
+    const ctMap = {};
+    df.forEach(r=>{ const c=(r.country||'Unknown').trim()||'Unknown'; ctMap[c]=(ctMap[c]||0)+1; });
+    const ctSorted = Object.entries(ctMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+    new Chart(document.getElementById('c-country'), {
+      type:'bar',
+      data:{ labels: ctSorted.map(e=>e[0]), datasets:[{ label:'Channels', data: ctSorted.map(e=>e[1]), backgroundColor: TEAL+'99', borderColor: TEAL, borderWidth:1 }]},
+      options:{...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}}}
+    });
+  } else {
+    document.getElementById('country-card').innerHTML = `<h3>Country</h3><p style="color:var(--muted);margin-top:20px">No "country" column found in dataset.</p>`;
+  }
+
+  // ── Tier chart
+  const tierCol = df.some(r=>r.tier) ? 'tier' : null;
+  if (tierCol) {
+    const tMap = {};
+    df.forEach(r=>{ const t=(r.tier||'Unknown').trim()||'Unknown'; tMap[t]=(tMap[t]||0)+1; });
+    const tSorted = Object.entries(tMap).sort((a,b)=>b[1]-a[1]);
+    new Chart(document.getElementById('c-tier'), {
+      type:'bar',
+      data:{ labels: tSorted.map(e=>e[0]), datasets:[{ label:'Channels', data: tSorted.map(e=>e[1]), backgroundColor: ACCENT4+'99', borderColor: ACCENT4, borderWidth:1 }]},
+      options:{...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}}}
+    });
+  } else {
+    document.getElementById('tier-card').innerHTML = `<h3>Tier</h3><p style="color:var(--muted);margin-top:20px">No "tier" column found in dataset.</p>`;
+  }
+
+  // ── Top 10 by Subscribers
+  const topSubs = topN(df,'subscribers');
+  new Chart(document.getElementById('c-top-subs'), {
+    type:'bar', indexAxis:'y',
+    data:{ labels: topSubs.map(r=>r.channel_name), datasets:[{ label:'Subscribers', data: topSubs.map(r=>r.subscribers), backgroundColor: ACCENT+'cc', borderColor: ACCENT, borderWidth:1 }]},
+    options:{...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, callback: v=>fmt(v)}}, y:{...defaultOpts().scales.y}}}
+  });
+
+  // ── Top 10 by Total Views
+  const topViews = topN(df,'total_views');
+  new Chart(document.getElementById('c-top-views'), {
+    type:'bar', indexAxis:'y',
+    data:{ labels: topViews.map(r=>r.channel_name), datasets:[{ label:'Total Views', data: topViews.map(r=>r.total_views), backgroundColor: ACCENT2+'cc', borderColor: ACCENT2, borderWidth:1 }]},
+    options:{...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, callback: v=>fmt(v)}}, y:{...defaultOpts().scales.y}}}
+  });
+
+  // ── Top 10 by Views Per Video
+  const topVPV = topN(df,'views_per_video');
+  new Chart(document.getElementById('c-top-vpv'), {
+    type:'bar', indexAxis:'y',
+    data:{ labels: topVPV.map(r=>r.channel_name), datasets:[{ label:'Views/Video', data: topVPV.map(r=>r.views_per_video), backgroundColor: ACCENT3+'cc', borderColor: ACCENT3, borderWidth:1 }]},
+    options:{...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, callback: v=>fmt(v)}}, y:{...defaultOpts().scales.y}}}
+  });
+
+  // ── Growth Score
+  const topGrowth = topN(channelData,'growth_score');
+  new Chart(document.getElementById('c-growth'), {
+    type:'bar', indexAxis:'y',
+    data:{ labels: topGrowth.map(c=>c.channel_name), datasets:[{ label:'Growth Score', data: topGrowth.map(c=>c.growth_score.toFixed(3)), backgroundColor: ACCENT4+'cc', borderColor: ACCENT4, borderWidth:1 }]},
+    options:{...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}}}
+  });
+
+  // ── Trending Index
+  const topTrending = topN(channelData,'trending_index');
+  new Chart(document.getElementById('c-trending'), {
+    type:'bar', indexAxis:'y',
+    data:{ labels: topTrending.map(c=>c.channel_name), datasets:[{ label:'Trending Index', data: topTrending.map(c=>c.trending_index.toFixed(3)), backgroundColor: TEAL+'cc', borderColor: TEAL, borderWidth:1 }]},
+    options:{...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}}}
+  });
+
+  // ── Cluster Scatter
+  const clusterColors = [ACCENT, ACCENT2, ACCENT3];
+  const clusterNames  = ['Cluster 0 — Standard', 'Cluster 1 — High Engagement', 'Cluster 2 — Viral/Outlier'];
+  const clusterDatasets = [0,1,2].map(ci => ({
+    label: clusterNames[ci],
+    data: channelData.filter(c=>c.cluster===ci).map(c=>({ x:c.avg_views_per_video, y:c.avg_engagement, name:c.channel_name })),
+    backgroundColor: clusterColors[ci]+'88',
+    borderColor: clusterColors[ci],
+    pointRadius: 5
+  }));
+  new Chart(document.getElementById('c-cluster'), {
+    type:'scatter',
+    data:{ datasets: clusterDatasets },
+    options:{...defaultOpts(),
+      plugins:{...defaultOpts().plugins,
+        tooltip:{ callbacks:{ label: ctx => `${ctx.raw.name}: VPV=${fmt(ctx.raw.x)} Eng=${ctx.raw.y.toFixed(2)}` } }
+      },
+      scales:{
+        x:{...defaultOpts().scales.x, title:{display:true,text:'Avg Views Per Video',color:MUTED}},
+        y:{...defaultOpts().scales.y, title:{display:true,text:'Avg Engagement (Views/Subs)',color:MUTED}}
+      }
+    }
+  });
+
+  // Cluster legend
+  document.getElementById('cluster-legend').innerHTML = clusterNames.map((n,i)=>`
+    <div class="cluster-item">
+      <div class="cluster-dot" style="background:${clusterColors[i]}"></div>
+      <span>${n}</span>
+    </div>`).join('');
+
+  // Cluster Stats table
+  const clusterStats = [0,1,2].map(ci => {
+    const group = channelData.filter(c=>c.cluster===ci);
+    const avgOf = k => group.length ? group.reduce((s,c)=>s+c[k],0)/group.length : 0;
+    return { ci, size: group.length, avgSubs: avgOf('avg_subscribers'), avgViews: avgOf('avg_views'), avgEng: avgOf('avg_engagement'), avgVPV: avgOf('avg_views_per_video') };
+  });
+  document.getElementById('cluster-stats-wrap').innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+      <thead><tr>
+        <th style="padding:10px;text-align:left;color:#8b90a7;border-bottom:1px solid #2a2f45">Cluster</th>
+        <th style="padding:10px;text-align:right;color:#8b90a7;border-bottom:1px solid #2a2f45">Channels</th>
+        <th style="padding:10px;text-align:right;color:#8b90a7;border-bottom:1px solid #2a2f45">Avg Subs</th>
+        <th style="padding:10px;text-align:right;color:#8b90a7;border-bottom:1px solid #2a2f45">Avg Views</th>
+        <th style="padding:10px;text-align:right;color:#8b90a7;border-bottom:1px solid #2a2f45">Avg Engagement</th>
+        <th style="padding:10px;text-align:right;color:#8b90a7;border-bottom:1px solid #2a2f45">Avg VPV</th>
+      </tr></thead>
+      <tbody>
+        ${clusterStats.map((s,i)=>`<tr>
+          <td style="padding:10px;border-bottom:1px solid #2a2f45">
+            <span class="cluster-dot" style="background:${clusterColors[i]};display:inline-block;margin-right:6px"></span>${clusterNames[i]}
+          </td>
+          <td style="padding:10px;text-align:right;border-bottom:1px solid #2a2f45">${s.size}</td>
+          <td style="padding:10px;text-align:right;border-bottom:1px solid #2a2f45">${fmt(s.avgSubs)}</td>
+          <td style="padding:10px;text-align:right;border-bottom:1px solid #2a2f45">${fmt(s.avgViews)}</td>
+          <td style="padding:10px;text-align:right;border-bottom:1px solid #2a2f45">${s.avgEng.toFixed(2)}</td>
+          <td style="padding:10px;text-align:right;border-bottom:1px solid #2a2f45">${fmt(s.avgVPV)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  // ── Data Table (top 200)
+  const tableCols = ['channel_name','subscribers','total_views','total_videos','views_per_video','engagement_proxy'];
+  const tableRows = [...df].sort((a,b)=>b.subscribers-a.subscribers).slice(0,200);
+  const maxSubs = Math.max(...tableRows.map(r=>r.subscribers));
+
+  document.getElementById('data-table-wrap').innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th>
+          <th>Channel</th>
+          <th>Subscribers</th>
+          <th>Total Views</th>
+          <th>Total Videos</th>
+          <th>Views/Video</th>
+          <th>Engagement</th>
+        </tr></thead>
+        <tbody>
+          ${tableRows.map((r,i)=>`<tr>
+            <td><span class="rank-badge ${i<3?'rank-'+(i+1):'rank-n'}">${i+1}</span></td>
+            <td style="font-weight:600">${r.channel_name||'—'}</td>
+            <td>
+              <div class="mini-bar-wrap">
+                <span style="min-width:52px">${fmt(r.subscribers)}</span>
+                <div class="mini-bar"><div class="mini-bar-fill" style="width:${(r.subscribers/maxSubs*100).toFixed(1)}%;background:${ACCENT}"></div></div>
+              </div>
+            </td>
+            <td>${fmt(r.total_views)}</td>
+            <td>${fmt(r.total_videos)}</td>
+            <td>${fmt(r.views_per_video)}</td>
+            <td>${r.engagement_proxy.toFixed(2)}×</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  /* ── Show main content ── */
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('upload-prompt').classList.add('hidden');
+  document.getElementById('main-content').classList.remove('hidden');
+
+  const pill = document.getElementById('status-pill');
+  pill.textContent = `✅ ${fmtFull(df.length)} channels loaded`;
+  pill.classList.add('loaded');
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TAB SWITCHING
+───────────────────────────────────────────────────────────────── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ─────────────────────────────────────────────────────────────────
+   FILE HANDLING
+───────────────────────────────────────────────────────────────── */
+function loadFile(file) {
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  document.getElementById('loading-progress').textContent = 'Parsing CSV…';
+  document.getElementById('upload-prompt').classList.add('hidden');
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: result => {
+      try {
+        processAndRender(result.data);
+      } catch(e) {
+        document.getElementById('loading-progress').textContent = 'Error: ' + e.message;
+        console.error(e);
+      }
+    },
+    error: err => {
+      document.getElementById('loading-progress').textContent = 'Parse error: ' + err.message;
+    }
+  });
+}
+
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+/* ─── Full-page drag-and-drop (works anywhere on the page) ─── */
+['dragenter','dragover'].forEach(ev =>
+  document.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); })
+);
+document.addEventListener('drop', e => {
+  e.preventDefault(); e.stopPropagation();
+  const file = [...(e.dataTransfer.files||[])].find(f => f.name.toLowerCase().endsWith('.csv'));
+  if (file) loadFile(file);
+});
+
+/* ─── Auto-discover CSV when served from a local server ─── */
+(async () => {
+  // Step 1: ask the server for a directory listing (Apache/Nginx/Python http.server all return one)
+  async function discoverFromListing() {
+    try {
+      const resp = await fetch('./', { method:'GET' });
+      if (!resp.ok) return null;
+      const html = await resp.text();
+      // grab all hrefs ending in .csv from the listing page
+      const matches = [...html.matchAll(/href="([^"?#]*\.csv)"/gi)].map(m => decodeURIComponent(m[1]));
+      return matches.length ? matches : null;
+    } catch { return null; }
+  }
+
+  // Step 2: fallback — try a hardcoded list of likely names
+  const FALLBACK_NAMES = [
+    'youtube_4k_channels_cleaned.csv',
+    'youtube_channels.csv',
+    'channels.csv',
+    'data.csv',
+    'dataset.csv',
+  ];
+
+  async function tryFetch(name) {
+    try {
+      const r = await fetch(name);
+      return r.ok ? r : null;
+    } catch { return null; }
+  }
+
+  async function loadFromUrl(url, label) {
+    document.getElementById('loading-overlay').classList.remove('hidden');
+    document.getElementById('loading-progress').textContent = `Loading ${label}…`;
+    document.getElementById('upload-prompt').classList.add('hidden');
+    try {
+      const text = await (await fetch(url)).text();
+      const result = Papa.parse(text, { header:true, skipEmptyLines:true });
+      processAndRender(result.data);
+    } catch(e) {
+      document.getElementById('loading-progress').textContent = 'Error: ' + e.message;
+      document.getElementById('loading-overlay').classList.add('hidden');
+      document.getElementById('upload-prompt').classList.remove('hidden');
+    }
+  }
+
+  // Show scanning hint
+  const scanMsg = document.getElementById('auto-scan-msg');
+  if (scanMsg) scanMsg.style.display = 'block';
+
+  // 1. Try directory listing first
+  const listed = await discoverFromListing();
+  if (listed && listed.length) {
+    if (scanMsg) scanMsg.style.display = 'none';
+    if (listed.length === 1) {
+      // Only one CSV → load it automatically
+      await loadFromUrl(listed[0], listed[0]);
+    } else {
+      // Multiple CSVs → show a picker modal instead of auto-loading blindly
+      showFilePicker(listed);
+    }
+    return;
+  }
+
+  // 2. Try each fallback name
+  for (const name of FALLBACK_NAMES) {
+    const resp = await tryFetch(name);
+    if (resp) {
+      if (scanMsg) scanMsg.style.display = 'none';
+      await loadFromUrl(name, name);
+      return;
+    }
+  }
+
+  // 3. Nothing found — show the upload prompt
+  if (scanMsg) scanMsg.style.display = 'none';
+  document.getElementById('loading-overlay').classList.add('hidden');
+})();
+
+/* ─── Multi-file picker modal (shown when >1 CSV found in directory) ─── */
+function showFilePicker(files) {
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('upload-prompt').classList.remove('hidden');
+
+  // Build modal
+  const modal = document.createElement('div');
+  modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200`;
+  modal.innerHTML = `
+    <div style="background:#1e2132;border:1px solid #2a2f45;border-radius:20px;padding:36px 40px;max-width:480px;width:90%;text-align:center">
+      <div style="font-size:36px;margin-bottom:16px">📂</div>
+      <h2 style="margin-bottom:8px;font-size:1.2rem">Multiple CSV files found</h2>
+      <p style="color:#8b90a7;font-size:0.85rem;margin-bottom:24px">Select the dataset you want to analyse:</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${files.map(f=>`
+          <button onclick="selectAutoFile('${f}')" style="background:#1a1d27;border:1px solid #2a2f45;border-radius:10px;padding:12px 18px;color:#e4e6f0;cursor:pointer;font-size:0.9rem;text-align:left;transition:border-color .15s"
+            onmouseover="this.style.borderColor='#6c63ff'" onmouseout="this.style.borderColor='#2a2f45'">
+            📄 ${f}
+          </button>`).join('')}
+      </div>
+      <p style="margin-top:20px;font-size:0.8rem;color:#8b90a7">or <span style="color:#6c63ff;cursor:pointer;text-decoration:underline" onclick="this.closest('div[style]').remove();document.getElementById('file-input').click()">browse for another file</span></p>
+    </div>`;
+  document.body.appendChild(modal);
+
+  window.selectAutoFile = async (name) => {
+    modal.remove();
+    const resp = await fetch(name);
+    if (resp.ok) {
+      document.getElementById('loading-overlay').classList.remove('hidden');
+      document.getElementById('loading-progress').textContent = `Loading ${name}…`;
+      document.getElementById('upload-prompt').classList.add('hidden');
+      const text = await resp.text();
+      const result = Papa.parse(text, { header:true, skipEmptyLines:true });
+      processAndRender(result.data);
+    }
+  };
+}
+
+</script>
+</body>
+</html>
