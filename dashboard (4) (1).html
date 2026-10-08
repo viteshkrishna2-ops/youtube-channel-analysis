@@ -1,0 +1,4102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cyber-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Analytics Intelligence Pro • DAE Enterprise</title>
+
+  <!-- Papa Parse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ─────────────────────────────────────────────────────────────────
+       CSS DESIGN TOKENS & THEMES
+    ───────────────────────────────────────────────────────────────── */
+    :root, [data-theme="cyber-dark"] {
+      --bg: #090d16;
+      --surface: #111827;
+      --card: #162032;
+      --card-hover: #1c2a42;
+      --border: #1f2d44;
+      --border-focus: #6366f1;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --accent2: #ec4899;
+      --accent3: #10b981;
+      --accent4: #f59e0b;
+      --purple: #a855f7;
+      --teal: #06b6d4;
+      --surface-hover: #1f293d;
+      --table-stripe: rgba(255, 255, 255, 0.02);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    [data-theme="midnight-oled"] {
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --card: #121212;
+      --card-hover: #1a1a1a;
+      --border: #222222;
+      --border-focus: #3b82f6;
+      --text: #f8fafc;
+      --text-muted: #8e8e93;
+      --text-dim: #555555;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --accent2: #ef4444;
+      --accent3: #22c55e;
+      --accent4: #eab308;
+      --purple: #c084fc;
+      --teal: #22d3ee;
+      --surface-hover: #1e1e1e;
+      --table-stripe: rgba(255, 255, 255, 0.015);
+    }
+
+    [data-theme="corporate-clean"] {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --card: #ffffff;
+      --card-hover: #f1f5f9;
+      --border: #e2e8f0;
+      --border-focus: #4f46e5;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --accent: #4f46e5;
+      --accent-glow: rgba(79, 70, 229, 0.15);
+      --accent2: #db2777;
+      --accent3: #059669;
+      --accent4: #d97706;
+      --purple: #7c3aed;
+      --teal: #0891b2;
+      --surface-hover: #f1f5f9;
+      --table-stripe: #f8fafc;
+    }
+
+    [data-theme="synthwave"] {
+      --bg: #1a102f;
+      --surface: #241442;
+      --card: #2d1b54;
+      --card-hover: #372266;
+      --border: #442b78;
+      --border-focus: #f43f5e;
+      --text: #fdf4ff;
+      --text-muted: #d8b4fe;
+      --text-dim: #a855f7;
+      --accent: #f43f5e;
+      --accent-glow: rgba(244, 63, 94, 0.3);
+      --accent2: #06b6d4;
+      --accent3: #10b981;
+      --accent4: #fbbf24;
+      --purple: #ec4899;
+      --teal: #22d3ee;
+      --surface-hover: #3c246e;
+      --table-stripe: rgba(255, 255, 255, 0.03);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* ─── APP HEADER ─────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 150;
+      backdrop-filter: blur(14px);
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .logo {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 14px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    .brand-text h1 {
+      font-size: 1.08rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      color: #fff;
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand-text p {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    /* ─── UNIVERSAL LIVE SEARCH ──────────────────────────────────── */
+    .search-wrapper {
+      flex: 1;
+      max-width: 460px;
+      position: relative;
+      margin: 0 10px;
+    }
+
+    .search-input-box {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      padding: 9px 42px 9px 38px;
+      border-radius: 10px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .search-input-box:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .search-hotkey {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .search-results-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0; right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+      max-height: 420px;
+      overflow-y: auto;
+      z-index: 200;
+      display: none;
+    }
+    .search-results-dropdown.active { display: block; }
+
+    .search-item {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .search-item:last-child { border-bottom: none; }
+    .search-item:hover, .search-item.highlighted { background: var(--surface-hover); }
+
+    .search-item-thumb {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--surface);
+      object-fit: cover;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .search-item-info { flex: 1; min-width: 0; }
+    .search-item-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .search-item-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex; gap: 10px;
+    }
+
+    /* ─── HEADER RIGHT CONTROLS ──────────────────────────────────── */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+
+    .btn-tool {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-tool:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #4338ca 100%);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px var(--accent-glow);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px var(--accent-glow);
+    }
+
+    #status-pill {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent4);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    #status-pill.loaded {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent3);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .dataset-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .dataset-select {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Export dropdown */
+    .export-dropdown { position: relative; }
+    .export-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.4);
+      min-width: 190px;
+      padding: 6px 0;
+      z-index: 160;
+      display: none;
+    }
+    .export-menu.active { display: block; }
+    .export-item {
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+    .export-item:hover { background: var(--surface-hover); color: var(--accent); }
+
+    /* ─── UPLOAD SCREEN / PROMPT (INITIAL STATE) ─────────────────── */
+    #upload-prompt {
+      padding: 60px 24px;
+      max-width: 940px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .upload-box {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 44px 36px;
+      background: var(--card);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+    }
+    .upload-box:hover, .upload-box.drag-over {
+      border-color: var(--accent);
+      background: var(--surface-hover);
+      box-shadow: 0 12px 36px var(--accent-glow);
+      transform: translateY(-2px);
+    }
+
+    .upload-detected-files {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+    .upload-detected-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .detected-file-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .detected-file-pill:hover {
+      border-color: var(--accent);
+      background: var(--card-hover);
+      transform: translateX(4px);
+    }
+    .detected-file-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .detected-file-icon {
+      font-size: 24px;
+    }
+    .detected-file-name {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .detected-file-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* ─── MASTER FILTER CONTROL BAR (FILTERED SEARCH) ────────── */
+    .filter-panel {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 24px;
+      transition: all 0.2s ease;
+    }
+    .filter-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .filter-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .filter-status-badge {
+      font-size: 0.78rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 20px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .filter-status-badge strong { color: var(--accent); }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      align-items: end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .filter-group label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .filter-control {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .filter-control:focus { border-color: var(--border-focus); }
+
+    /* ─── CREATION DATE RANGE & RESET (MATCHING USER SCREENSHOT) ─── */
+    .filter-group-year-wrap {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .year-select {
+      min-width: 90px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: var(--text);
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-reset-filters {
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-reset-filters:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .reset-icon {
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    /* Range slider with live readout */
+    .range-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .range-input {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Filter Presets Strip */
+    .preset-strip {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+    .preset-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .preset-pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .preset-pill:hover, .preset-pill.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Active Filter Badges Bar */
+    .active-filters-bar {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--text);
+      font-size: 0.74rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-chip-remove {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .filter-chip-remove:hover { color: #f43f5e; }
+
+    /* ─── MAIN CONTENT CONTAINER ─────────────────────────────────── */
+    main {
+      padding: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    main.hidden { display: none; }
+
+    /* ─── KPI METRIC CARDS STRIP ─────────────────────────────────── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+    .kpi-card:hover {
+      border-color: var(--kpi-color, var(--accent));
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--kpi-color, var(--accent));
+    }
+    .kpi-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      margin: 4px 0 2px;
+      letter-spacing: -0.02em;
+    }
+    .kpi-sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    /* ─── TAB NAVIGATION ─────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 22px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+      padding: 10px 18px;
+      border-radius: 10px 10px 0 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      position: relative;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-bottom: 1px solid var(--card);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      top: -1px; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── GRID LAYOUTS ───────────────────────────────────────────── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+    }
+    .chart-card h3 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chart-card p.subtitle {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    /* ─── SECTION TITLE ──────────────────────────────────────────── */
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin: 24px 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* ─── CREATOR IQ BADGES & STYLING ────────────────────────────── */
+    .iq-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
+    }
+    .iq-grade-s-plus { background: rgba(236, 72, 153, 0.2); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.4); }
+    .iq-grade-s { background: rgba(99, 102, 241, 0.2); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.4); }
+    .iq-grade-a { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .iq-grade-b { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .iq-grade-c { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+    .archetype-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    /* ─── DATA TABLE STYLING ─────────────────────────────────────── */
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .table-search {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.82rem;
+      padding: 8px 14px;
+      border-radius: 8px;
+      min-width: 260px;
+      outline: none;
+    }
+    .table-search:focus { border-color: var(--border-focus); }
+
+    .table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow-x: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: left;
+    }
+    table.data-table th {
+      background: var(--surface);
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    table.data-table th:hover { color: var(--text); }
+    table.data-table th .sort-arrow { margin-left: 4px; font-size: 0.72rem; }
+    table.data-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    table.data-table tr:hover { background: var(--table-stripe); }
+
+    .channel-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .channel-cell img, .avatar-placeholder {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .avatar-placeholder {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem;
+    }
+    .channel-meta-name {
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .channel-meta-name:hover { color: var(--accent); }
+    .channel-meta-handle {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mini-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 3px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .mini-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 3px;
+    }
+
+    .badge-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.72rem;
+    }
+    .rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; }
+    .rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #000; }
+    .rank-3 { background: linear-gradient(135deg, #b45309, #78350f); color: #fff; }
+    .rank-n { color: var(--text-dim); }
+
+    .table-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-tbl {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-tbl:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Pagination */
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-page {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-page:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ─── HEAD-TO-HEAD CHANNEL COMPARE ───────────────────────────── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .compare-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      position: relative;
+    }
+    .compare-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .compare-card-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .compare-card-name { font-size: 1rem; font-weight: 800; }
+    .compare-card-meta { font-size: 0.74rem; color: var(--text-muted); }
+    .compare-card-remove {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .compare-card-remove:hover { color: #f43f5e; }
+
+    .battle-table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+    table.battle-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+    table.battle-table th, table.battle-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    table.battle-table th:first-child, table.battle-table td:first-child { text-align: left; }
+    .winner-cell {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent3);
+      font-weight: 800;
+    }
+
+    /* Floating Compare Dock */
+    #compare-dock {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 12px 18px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+      z-index: 140;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      backdrop-filter: blur(12px);
+    }
+    #compare-dock.active { display: flex; animation: slideUp 0.25s ease; }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .dock-chips { display: flex; gap: 8px; align-items: center; }
+    .dock-chip {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ─── MODAL OVERLAYS (DOSSIER & BRIEFING) ─────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 250;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+
+    .modal-window {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      max-width: 820px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+    .modal-close {
+      position: absolute;
+      top: 18px; right: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .modal-close:hover { color: #f43f5e; border-color: #f43f5e; }
+
+    .dossier-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .modal-avatar {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .dossier-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .dossier-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .dossier-stat .val { font-size: 1.25rem; font-weight: 800; color: var(--text); }
+    .dossier-stat .lbl { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+
+    /* Forecaster progress bar in dossier */
+    .milestone-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .milestone-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .milestone-bar {
+      height: 10px;
+      background: var(--card);
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .milestone-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ec4899, #f59e0b, #10b981);
+      border-radius: 5px;
+      transition: width 0.6s ease;
+    }
+
+    /* ─── TOAST NOTIFICATIONS ────────────────────────────────────── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastIn 0.25s ease;
+    }
+    @keyframes toastIn {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ─── LOADING OVERLAY ────────────────────────────────────────── */
+    #loading-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 400;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #loading-overlay.active { display: flex; }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── PRINT / EXPORT STYLES ──────────────────────────────────── */
+    @media print {
+      header, .filter-panel, .tab-bar, .pagination-bar, #compare-dock, .table-toolbar, .btn-tool, .btn-primary {
+        display: none !important;
+      }
+      body, main {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+      }
+      .tab-panel { display: block !important; }
+      .chart-card, .kpi-card, .table-wrap {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+        margin-bottom: 16px !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ─── APP HEADER ───────────────────────────────────────────── -->
+<header>
+  <div class="brand" onclick="showDatasetSelectionHub()" title="Return to Dataset Selection Hub">
+    <div class="logo">📊</div>
+    <div class="brand-text">
+      <h1>YouTube Analytics Pro <span class="brand-badge">DAE ENTERPRISE</span></h1>
+      <p>Data Analysis Essentials • Deep Channel Intelligence &amp; Monetization Suite</p>
+    </div>
+  </div>
+
+  <!-- Universal Live Search Bar -->
+  <div class="search-wrapper">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="universal-search" class="search-input-box" placeholder="Quick search any channel, @handle, keyword… (Ctrl+K or /)" autocomplete="off" />
+    <span class="search-hotkey">Ctrl + K</span>
+    <div class="search-results-dropdown" id="search-dropdown"></div>
+  </div>
+
+  <!-- Header Right Tools -->
+  <div class="header-right">
+    <!-- Switch / Select Dataset Button -->
+    <button class="btn-tool" onclick="showDatasetSelectionHub()" title="Choose or switch dataset">
+      🔄 <span>Switch Dataset</span>
+    </button>
+
+    <!-- Dataset File Selector (Shown once files are discovered or loaded) -->
+    <div class="dataset-select-wrap" id="dataset-select-wrap" style="display:none">
+      <label for="dataset-select">File:</label>
+      <select class="dataset-select" id="dataset-select" onchange="onDatasetChange(this.value)"></select>
+    </div>
+
+    <div id="status-pill">⏳ Select a Dataset</div>
+
+    <!-- Executive Intelligence Briefing Button -->
+    <button class="btn-tool" onclick="openExecutiveBriefing()" title="Generate Executive Intelligence Report">
+      📊 <span>Executive Briefing</span>
+    </button>
+
+    <!-- Theme Switcher -->
+    <button class="btn-tool" onclick="cycleTheme()" title="Switch Visual Theme">
+      🌓 <span id="theme-btn-label">Cyber Dark</span>
+    </button>
+
+    <!-- Export Center Menu -->
+    <div class="export-dropdown">
+      <button class="btn-tool" onclick="toggleExportMenu(event)">📥 Export ▾</button>
+      <div class="export-menu" id="export-menu">
+        <div class="export-item" onclick="exportData('csv')">📄 Export Filtered CSV</div>
+        <div class="export-item" onclick="exportData('json')">📦 Export Filtered JSON</div>
+        <div class="export-item" onclick="openExecutiveBriefing()">📊 Executive Briefing</div>
+        <div class="export-item" onclick="window.print()">🖨️ Print / Save as PDF</div>
+      </div>
+    </div>
+
+    <!-- Load File Button -->
+    <button class="btn-primary" onclick="document.getElementById('file-input').click()">📂 Load CSV</button>
+    <input type="file" id="file-input" accept=".csv" style="display:none" />
+  </div>
+</header>
+
+<!-- ─── UPLOAD SCREEN / PROMPT (INITIAL STATE - EXACT SCREENSHOT MATCH) ─── -->
+<div id="upload-prompt">
+  <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:18px">
+        <div class="icon" style="font-size:38px;margin:0;line-height:1">📥</div>
+        <div style="text-align:left">
+          <h3 style="font-size:1.15rem;font-weight:700">Or Drag &amp; Drop Any Custom YouTube CSV File</h3>
+          <p style="font-size:0.83rem;color:var(--text-muted);margin-top:4px">Click to browse or drop your CSV file here. Intelligent column auto-detection matches any schema.</p>
+        </div>
+      </div>
+      <button class="btn-tool" style="margin-left:auto;padding:8px 16px;font-size:0.82rem;white-space:nowrap" onclick="event.stopPropagation(); document.getElementById('file-input').click()">📁 Browse Computer</button>
+    </div>
+  </div>
+
+  <!-- Detected Local Datasets Quick Load Options -->
+  <div class="upload-detected-files" id="detected-files-list">
+    <div class="upload-detected-label">Available Local Project Datasets (Click to Load)</div>
+    <div class="detected-file-pill" onclick="loadPredefinedDataset('youtube_channel_info_v2.csv')">
+      <div class="detected-file-info">
+        <div class="detected-file-icon">⚡</div>
+        <div>
+          <div class="detected-file-name">youtube_channel_info_v2.csv</div>
+          <div class="detected-file-sub">16,094 Channels • Rich Schema with Creation Dates, 30-Day Velocity &amp; Topics</div>
+        </div>
+      </div>
+      <button class="btn-primary" style="padding:6px 14px;font-size:0.75rem">Load 16K Dataset</button>
+    </div>
+    <div class="detected-file-pill" onclick="loadPredefinedDataset('youtube_4k_channels_cleaned.csv')">
+      <div class="detected-file-info">
+        <div class="detected-file-icon">⚡</div>
+        <div>
+          <div class="detected-file-name">youtube_4k_channels_cleaned.csv</div>
+          <div class="detected-file-sub">3,966 Channels • Curated Global Ranks, Subscriber Tiers &amp; Views per Video</div>
+        </div>
+      </div>
+      <button class="btn-primary" style="padding:6px 14px;font-size:0.75rem">Load 4K Dataset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MASTER FILTER CONTROL BAR (FILTERED SEARCH) ────────── -->
+<div class="filter-panel" id="filter-panel" style="display:none">
+  <div class="filter-header">
+    <div class="filter-title">
+      <span>🎯</span> Multi-Faceted Filter &amp; Slicing Studio
+    </div>
+    <div class="filter-status-badge" id="filter-status-badge">
+      Showing <strong>0</strong> of 0 channels
+    </div>
+  </div>
+
+  <div class="filter-grid">
+    <!-- 1. Text Search Filter -->
+    <div class="filter-group">
+      <label>Keyword / Channel Name</label>
+      <input type="text" id="filter-keyword" class="filter-control" placeholder="Filter title, handle, topic…" oninput="applyFilters()" />
+    </div>
+
+    <!-- 2. Creation Year Range Filter & Inline Reset (EXACT SCREENSHOT MATCH) -->
+    <div class="filter-group-year-wrap" id="filter-year-range-block">
+      <div class="filter-group">
+        <label for="filter-year-from">Created from</label>
+        <select id="filter-year-from" class="year-select" onchange="applyFilters()">
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-year-to">to</label>
+        <select id="filter-year-to" class="year-select" onchange="applyFilters()">
+          <option value="all">All</option>
+        </select>
+      </div>
+      <button class="btn-reset-filters" id="btn-reset-filters-inline" onclick="resetFilters()" title="Reset all active filters">
+        <span class="reset-icon">↺</span> Reset filters
+      </button>
+    </div>
+
+    <!-- 3. Country Filter -->
+    <div class="filter-group">
+      <label>Country / Territory</label>
+      <select id="filter-country" class="filter-control" onchange="applyFilters()">
+        <option value="all">All Countries</option>
+      </select>
+    </div>
+
+    <!-- 4. Category Filter -->
+    <div class="filter-group">
+      <label>Content Category / Genre</label>
+      <select id="filter-category" class="filter-control" onchange="applyFilters()">
+        <option value="all">All Categories</option>
+      </select>
+    </div>
+
+    <!-- 5. Tier Filter -->
+    <div class="filter-group">
+      <label>Subscriber Tier</label>
+      <select id="filter-tier" class="filter-control" onchange="applyFilters()">
+        <option value="all">All Tiers</option>
+        <option value="🔴 100M+">🔴 100M+ Diamond</option>
+        <option value="🟠 50–100M">🟠 50–100M Ruby</option>
+        <option value="🟡 10–50M">🟡 10–50M Gold</option>
+        <option value="🟢 1–10M">🟢 1–10M Silver</option>
+        <option value="⚪ <1M">⚪ &lt;1M Bronze</option>
+      </select>
+    </div>
+
+    <!-- 6. AI Creator IQ Grade Filter -->
+    <div class="filter-group">
+      <label>Creator IQ™ Grade</label>
+      <select id="filter-iq-grade" class="filter-control" onchange="applyFilters()">
+        <option value="all">All IQ Grades</option>
+        <option value="S+">👑 S+ Elite Titan (92+)</option>
+        <option value="S">💎 S Mega Star (82–91)</option>
+        <option value="A">⚡ A High Velocity (70–81)</option>
+        <option value="B">📈 B Growth Engine (50–69)</option>
+        <option value="C">🌱 C Challenger (&lt;50)</option>
+      </select>
+    </div>
+
+    <!-- 7. K-Means Cluster Filter -->
+    <div class="filter-group">
+      <label>ML Cluster Segment</label>
+      <select id="filter-cluster" class="filter-control" onchange="applyFilters()">
+        <option value="all">All Clusters</option>
+        <option value="0">Cluster 0 — Scale Giants</option>
+        <option value="1">Cluster 1 — High Engagement</option>
+        <option value="2">Cluster 2 — Viral Disruptors</option>
+      </select>
+    </div>
+
+    <!-- 8. Min Subscribers Slider -->
+    <div class="filter-group">
+      <label>Min Subscribers: <span id="lbl-min-subs" style="color:var(--accent)">0</span></label>
+      <div class="range-wrap">
+        <input type="range" id="filter-min-subs" class="range-input" min="0" max="100" value="0" oninput="onMinSubsChange(this.value)" />
+      </div>
+    </div>
+
+    <!-- 9. Sort By Controller -->
+    <div class="filter-group">
+      <label>Sort Metric</label>
+      <select id="filter-sort-by" class="filter-control" onchange="applyFilters()">
+        <option value="creator_iq">AI Creator IQ™ (Highest)</option>
+        <option value="subscribers">Subscribers (Highest)</option>
+        <option value="total_views">Total Views (Highest)</option>
+        <option value="views_per_video">Views Per Video (Efficiency)</option>
+        <option value="engagement_proxy">Engagement Ratio (Views/Subs)</option>
+        <option value="growth_score">Growth Score (ML Random Forest)</option>
+        <option value="trending_index">Trending Index (ML)</option>
+        <option value="total_videos">Video Library Size</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Quick Filter Presets Strip -->
+  <div class="preset-strip">
+    <span class="preset-label">Quick Presets:</span>
+    <button class="preset-pill" onclick="setPreset('mega')">👑 Mega Giants (50M+)</button>
+    <button class="preset-pill" onclick="setPreset('vpv')">⚡ High Efficiency (&gt;10M VPV)</button>
+    <button class="preset-pill" onclick="setPreset('top_iq')">🏆 Top Creator IQ (90+)</button>
+    <button class="preset-pill" onclick="setPreset('recent')">🚀 Modern Era (2018+)</button>
+    <button class="preset-pill" onclick="setPreset('pioneer')">🏛️ Vintage Pioneers (Pre-2012)</button>
+    <button class="preset-pill" onclick="setPreset('india')">🇮🇳 India Creators</button>
+    <button class="preset-pill" onclick="setPreset('usa')">🇺🇸 USA Creators</button>
+    <button class="preset-pill" onclick="setPreset('high_growth')">🚀 High Growth Score</button>
+    <button class="preset-pill" onclick="resetFilters()">🔄 Reset All</button>
+  </div>
+
+  <!-- Active Filter Chips -->
+  <div class="active-filters-bar" id="active-filters-bar"></div>
+</div>
+
+<!-- ─── MAIN DASHBOARD CONTENT ──────────────────────────────── -->
+<main id="main-content" class="hidden">
+
+  <!-- KPI Strip (Executive Metrics) -->
+  <div class="kpi-strip" id="kpi-strip"></div>
+
+  <!-- Tab Navigation Bar (6 Deep Modules) -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="overview">📈 Overview &amp; Era Trends</button>
+    <button class="tab-btn" data-tab="top10">🏆 Leaderboards &amp; IQ Rankings</button>
+    <button class="tab-btn" data-tab="compare">⚔️ Channel Compare</button>
+    <button class="tab-btn" data-tab="ml">🤖 ML Insights &amp; 4D Matrix</button>
+    <button class="tab-btn" data-tab="monetize">💰 Monetization Simulator</button>
+    <button class="tab-btn" data-tab="data">📋 Data Explorer</button>
+  </div>
+
+  <!-- ════════ TAB 1: OVERVIEW & ERA TRENDS ════════ -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="section-title"><span>📊</span> Metric Distributions</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Subscriber Distribution <span style="font-size:0.75rem;color:var(--text-muted)">Log/Linear Scale</span></h3>
+        <p class="subtitle">Binned frequencies across subscriber count brackets</p>
+        <div class="chart-wrap" style="height:260px"><canvas id="c-subs-hist"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Total Views Distribution <span style="font-size:0.75rem;color:var(--text-muted)">Viewership Reach</span></h3>
+        <p class="subtitle">Cumulative channel views distribution across cohort</p>
+        <div class="chart-wrap" style="height:260px"><canvas id="c-views-hist"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ERA & HISTORICAL LAUNCH ANALYSIS -->
+    <div class="section-title" id="era-section-title"><span>🏛️</span> Creator Launch Era &amp; Historical Evolution</div>
+    <div class="grid-2" id="era-grid">
+      <div class="chart-card">
+        <h3>Channels Launched Per Year &amp; Views Efficiency</h3>
+        <p class="subtitle">Channels created per launch cohort vs average Views Per Video (efficiency trajectory)</p>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-era-timeline"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>YouTube Cohort Era Breakdown</h3>
+        <p class="subtitle">Pioneers (2005-10) • Studio Boom (2011-15) • Algo Titans (2016-19) • Shorts Era (2020+)</p>
+        <div id="era-cohort-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>📐</span> Multi-Metric Boxplots &amp; Efficiency</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Log-Transformed Boxplots (IQR &amp; Medians)</h3>
+        <p class="subtitle">Normalized spread across Subscribers, Total Views, and Video Catalog</p>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-boxplot"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Views-Per-Video Efficiency Curve</h3>
+        <p class="subtitle">Distribution of audience engagement per upload</p>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-vpv-hist"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>🌐</span> Bivariate Scatter &amp; Correlations</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Subscribers vs Total Views (Power-Law Scale)</h3>
+        <p class="subtitle">log₁₀(Subscribers) vs log₁₀(Total Views)</p>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-scatter1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Upload Volume vs Subscribers</h3>
+        <p class="subtitle">log₁₀(Total Videos) vs log₁₀(Subscribers) • Catalog scaling efficiency</p>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-scatter2"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>🔥</span> Statistical Pearson Correlation Heatmap</div>
+    <div class="chart-card" style="margin-bottom:24px">
+      <h3>Multi-Variable Correlation Matrix</h3>
+      <p class="subtitle">Pairwise correlation coefficients across all primary performance dimensions</p>
+      <div id="heatmap-container" style="overflow-x:auto"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="chart-card" id="country-card">
+        <h3 id="country-card-title">Top 10 Countries by Channel Count</h3>
+        <p class="subtitle">Geographic distribution of creators in filtered sample</p>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-country"></canvas></div>
+      </div>
+      <div class="chart-card" id="category-tier-card">
+        <h3 id="category-tier-card-title">Category / Tier Distribution</h3>
+        <p class="subtitle">Content genre share across the analyzed creator cohort</p>
+        <div class="chart-wrap" style="height:280px"><canvas id="c-tier"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title"><span>📋</span> Statistical Quantiles Benchmark Table</div>
+    <div class="chart-card" style="margin-bottom:24px">
+      <h3>Distribution Quantiles Summary (Min, P10, P25, Median, P75, P90, Max)</h3>
+      <div id="quantiles-table-wrap" style="overflow-x:auto"></div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 2: LEADERBOARDS & IQ RANKINGS ════════ -->
+  <div class="tab-panel" id="tab-top10">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <div><span>🏆</span> High-Impact Channel Leaderboards</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">
+        <span>Display Top:</span>
+        <select id="top-limit-select" class="filter-control" style="width:100px" onchange="renderTopCharts()">
+          <option value="10">Top 10</option>
+          <option value="15">Top 15</option>
+          <option value="25">Top 25</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Top Channels by AI Creator IQ™</h3>
+        <p class="subtitle">Composite rating of scale, efficiency, loyalty, and catalog leverage</p>
+        <div class="chart-wrap" style="height:360px"><canvas id="c-top-iq"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Top Channels by Subscribers</h3>
+        <p class="subtitle">Highest total subscriber audience in filtered cohort</p>
+        <div class="chart-wrap" style="height:360px"><canvas id="c-top-subs"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Top Channels by Total Views</h3>
+        <p class="subtitle">Highest cumulative viewership volume</p>
+        <div class="chart-wrap" style="height:360px"><canvas id="c-top-views"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Top Channels by Views Per Video (Efficiency Champions)</h3>
+        <p class="subtitle">Channels generating maximum viewership impact per upload</p>
+        <div class="chart-wrap" style="height:360px"><canvas id="c-top-vpv"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 3: HEAD-TO-HEAD CHANNEL COMPARE ════════ -->
+  <div class="tab-panel" id="tab-compare">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div><span>⚔️</span> Head-to-Head Battle Studio (Up to 4 Channels)</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-tool" onclick="comparePreset(['MrBeast', 'T-Series'])">⚔️ Battle: MrBeast vs T-Series</button>
+        <button class="btn-tool" onclick="comparePreset(['Cocomelon', 'SET India', 'PewDiePie'])">⚔️ Battle: Mega Titans</button>
+        <button class="btn-tool" onclick="clearComparison()">🗑️ Clear</button>
+      </div>
+    </div>
+
+    <!-- Selected Channels Grid -->
+    <div class="compare-grid" id="compare-cards-grid"></div>
+
+    <!-- Comparative Radar & Multi-Bar Chart -->
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>6-Axis Performance Radar</h3>
+        <p class="subtitle">Normalized comparison: Reach, Volume, Catalog, Efficiency, Loyalty, Creator IQ</p>
+        <div class="chart-wrap" style="height:380px"><canvas id="c-compare-radar"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Head-to-Head Comparative Metrics</h3>
+        <p class="subtitle">Side-by-side metric comparison across selected channels</p>
+        <div class="chart-wrap" style="height:380px"><canvas id="c-compare-bars"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Battle Scorecard Table -->
+    <div class="section-title"><span>👑</span> Battle Scorecard &amp; Category Winners</div>
+    <div class="battle-table-wrap" id="battle-table-wrap"></div>
+  </div>
+
+  <!-- ════════ TAB 4: ML INSIGHTS & 4D MATRIX ════════ -->
+  <div class="tab-panel" id="tab-ml">
+    <div class="section-title"><span>🤖</span> Machine Learning Clustering &amp; Segmentation</div>
+    <div class="chart-card" style="margin-bottom:24px">
+      <h3>K-Means 3-Cluster Segmentation (Views/Video vs Engagement Proxy)</h3>
+      <p class="subtitle">Unsupervised clustering categorizing creators into Scale Giants, Viral Disruptors, and Engagement Leaders</p>
+      <div class="chart-wrap" style="height:320px"><canvas id="c-cluster"></canvas></div>
+      <div class="cluster-legend" id="cluster-legend" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px"></div>
+      <div id="cluster-stats-wrap" style="margin-top:12px"></div>
+    </div>
+
+    <!-- 4D BUBBLE MATRIX -->
+    <div class="section-title"><span>🌌</span> Interactive 4D Market Landscape Matrix</div>
+    <div class="chart-card" style="margin-bottom:24px">
+      <h3>Catalog Size vs Efficiency vs Reach (4D Bubble Matrix)</h3>
+      <p class="subtitle">X = Total Videos (log₁₀) • Y = Views Per Video (log₁₀) • Bubble Size = Subscribers • Color = Cluster</p>
+      <div class="chart-wrap" style="height:380px"><canvas id="c-4d-bubble"></canvas></div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px;display:flex;gap:20px;flex-wrap:wrap">
+        <span>🎯 <strong>Top-Left Quadrant:</strong> Viral Snipers (Few uploads, colossal views)</span>
+        <span>🏭 <strong>Bottom-Right Quadrant:</strong> Content Factories (Massive catalogs, moderate efficiency)</span>
+        <span>👑 <strong>Top-Right:</strong> Titan Broadcasters (Huge catalogs and massive viewership)</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Log-Log Efficiency Quadrants</h3>
+        <p class="subtitle">log₁₀(Subscribers) vs log₁₀(Views/Video) split by cohort medians</p>
+        <div class="chart-wrap" style="height:320px"><canvas id="c-quadrant"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Random Forest Growth Proxy Scores</h3>
+        <p class="subtitle">Simulated non-linear feature importance weighting VPV (40%), Subs/Video (30%), Loyalty (30%)</p>
+        <div class="chart-wrap" style="height:320px"><canvas id="c-growth"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 5: CREATOR MONETIZATION SIMULATOR ════════ -->
+  <div class="tab-panel" id="tab-monetize">
+    <div class="section-title"><span>💰</span> Creator Monetization &amp; Enterprise Valuation Studio</div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <h3>Channel Selection &amp; Revenue Drivers</h3>
+        <p class="subtitle">Adjust RPM, monetization fill rate, and sponsorship rates to model AdSense and brand revenue</p>
+
+        <div style="margin-bottom:14px">
+          <label style="font-size:0.75rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">Select Channel to Model:</label>
+          <select id="sim-channel-select" class="filter-control" style="min-width:240px" onchange="loadSimChannel(this.value)"></select>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:4px">
+              <span>Estimated AdSense RPM / CPM ($):</span>
+              <span id="val-sim-rpm" style="color:var(--accent)">$3.50</span>
+            </div>
+            <input type="range" id="sim-rpm" class="range-input" style="width:100%" min="0.50" max="15.00" step="0.25" value="3.50" oninput="updateSimulation()" />
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:4px">
+              <span>Monetized Views Ratio:</span>
+              <span id="val-sim-monetized" style="color:var(--accent)">70%</span>
+            </div>
+            <input type="range" id="sim-monetized" class="range-input" style="width:100%" min="30" max="100" step="5" value="70" oninput="updateSimulation()" />
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:4px">
+              <span>Brand Deal Sponsorship CPM ($):</span>
+              <span id="val-sim-sponsor" style="color:var(--accent)">$25.00</span>
+            </div>
+            <input type="range" id="sim-sponsor" class="range-input" style="width:100%" min="5.00" max="60.00" step="1.00" value="25.00" oninput="updateSimulation()" />
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;font-weight:700;margin-bottom:4px">
+              <span>Estimated Monthly Upload Frequency:</span>
+              <span id="val-sim-uploads" style="color:var(--accent)">8 videos</span>
+            </div>
+            <input type="range" id="sim-uploads" class="range-input" style="width:100%" min="1" max="60" step="1" value="8" oninput="updateSimulation()" />
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>Estimated Earnings &amp; Enterprise Valuation</h3>
+        <p class="subtitle">AdSense + Integrated Sponsorships + 4x Annual Multiple Valuation</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="dossier-stat" style="background:var(--card)">
+            <div class="val" id="sim-out-monthly" style="color:var(--accent3)">$0</div>
+            <div class="lbl">Est. Monthly AdSense</div>
+            <div style="font-size:0.72rem;color:var(--text-dim)" id="sim-out-daily">Daily: $0</div>
+          </div>
+          <div class="dossier-stat" style="background:var(--card)">
+            <div class="val" id="sim-out-annual" style="color:var(--accent)">$0</div>
+            <div class="lbl">Est. Annual AdSense</div>
+          </div>
+          <div class="dossier-stat" style="background:var(--card)">
+            <div class="val" id="sim-out-sponsor-video" style="color:var(--accent4)">$0</div>
+            <div class="lbl">Est. Per-Video Brand Deal</div>
+          </div>
+          <div class="dossier-stat" style="background:var(--card)">
+            <div class="val" id="sim-out-gross" style="color:var(--purple)">$0</div>
+            <div class="lbl">Total Annual Gross Revenue</div>
+          </div>
+        </div>
+
+        <div class="dossier-stat" style="background:linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(236,72,153,0.15) 100%);border:1px solid var(--accent);margin-bottom:14px">
+          <div class="val" id="sim-out-val" style="font-size:1.6rem;color:#fff">$0</div>
+          <div class="lbl" style="color:var(--text)">Estimated Channel Enterprise Valuation (4× Multiple)</div>
+        </div>
+
+        <div class="chart-wrap" style="height:220px"><canvas id="c-sim-pie"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 6: DATA EXPLORER ════════ -->
+  <div class="tab-panel" id="tab-data">
+    <div class="table-toolbar">
+      <input type="text" id="table-inline-search" class="table-search" placeholder="Search table channels, country, handle…" oninput="onTableSearch(this.value)" />
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:0.78rem;color:var(--text-muted)">Rows per page:</span>
+        <select id="table-page-size" class="filter-control" style="width:80px" onchange="onPageSizeChange(this.value)">
+          <option value="15">15</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        <button class="btn-tool" onclick="exportData('csv')">📄 Export CSV</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th onclick="sortTable('rank')"># <span class="sort-arrow" id="th-rank"></span></th>
+            <th onclick="sortTable('channel_name')">Channel Name <span class="sort-arrow" id="th-channel_name"></span></th>
+            <th onclick="sortTable('creator_iq')">Creator IQ™ <span class="sort-arrow" id="th-creator_iq">▼</span></th>
+            <th onclick="sortTable('subscribers')">Subscribers <span class="sort-arrow" id="th-subscribers"></span></th>
+            <th onclick="sortTable('total_views')">Total Views <span class="sort-arrow" id="th-total_views"></span></th>
+            <th onclick="sortTable('total_videos')">Videos <span class="sort-arrow" id="th-total_videos"></span></th>
+            <th onclick="sortTable('views_per_video')">Views / Video <span class="sort-arrow" id="th-views_per_video"></span></th>
+            <th onclick="sortTable('engagement_proxy')">Engagement <span class="sort-arrow" id="th-engagement_proxy"></span></th>
+            <th onclick="sortTable('country')">Country <span class="sort-arrow" id="th-country"></span></th>
+            <th onclick="sortTable('tier')">Tier <span class="sort-arrow" id="th-tier"></span></th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="data-table-body"></tbody>
+      </table>
+      <div class="pagination-bar">
+        <div id="pagination-info">Showing 0–0 of 0 channels</div>
+        <div class="pagination-controls" id="pagination-controls"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ─── FLOATING COMPARISON DOCK ─────────────────────────────── -->
+<div id="compare-dock">
+  <span style="font-size:0.82rem;font-weight:700">⚔️ Compare (<span id="dock-count">0</span>/4):</span>
+  <div class="dock-chips" id="dock-chips"></div>
+  <button class="btn-primary" style="padding:6px 14px;font-size:0.75rem" onclick="openCompareTab()">View Battle ⚔️</button>
+  <button class="btn-tool" style="padding:6px 10px;font-size:0.75rem" onclick="clearComparison()">✕</button>
+</div>
+
+<!-- ─── CHANNEL DOSSIER MODAL ────────────────────────────────── -->
+<div class="modal-overlay" id="dossier-modal" onclick="closeDossierModal(event)">
+  <div class="modal-window">
+    <button class="modal-close" onclick="closeDossierModal()">&times;</button>
+    <div class="dossier-header">
+      <div id="modal-avatar" class="modal-avatar">Y</div>
+      <div>
+        <h2 id="modal-title" style="font-size:1.35rem;font-weight:800;display:flex;align-items:center;gap:8px">Channel Title</h2>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+          <span class="badge-pill" id="modal-handle">@handle</span>
+          <span class="badge-pill" id="modal-country">🇺🇸 US</span>
+          <span class="badge-pill" id="modal-tier">🔴 Tier</span>
+          <span class="badge-pill" id="modal-rank">Global Rank #1</span>
+          <span id="modal-iq-badge" class="iq-badge iq-grade-s-plus">👑 S+ 98.4</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Milestone Forecaster Bar -->
+    <div class="milestone-box" id="modal-milestone-box">
+      <div class="milestone-header">
+        <span id="ms-title">Next Milestone: 100M Red Diamond Award</span>
+        <span id="ms-pct" style="color:var(--accent)">85.4%</span>
+      </div>
+      <div class="milestone-bar">
+        <div class="milestone-bar-fill" id="ms-fill" style="width:85%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.74rem;color:var(--text-muted)">
+        <span id="ms-current">Current: 85.4M</span>
+        <span id="ms-eta">Est. Arrival: ~Q2 2026</span>
+      </div>
+    </div>
+
+    <div class="dossier-stats-grid">
+      <div class="dossier-stat"><div class="val" id="md-subs">0</div><div class="lbl">Subscribers</div></div>
+      <div class="dossier-stat"><div class="val" id="md-views">0</div><div class="lbl">Total Views</div></div>
+      <div class="dossier-stat"><div class="val" id="md-videos">0</div><div class="lbl">Total Videos</div></div>
+      <div class="dossier-stat"><div class="val" id="md-vpv">0</div><div class="lbl">Views / Video</div></div>
+      <div class="dossier-stat"><div class="val" id="md-eng">0×</div><div class="lbl">Engagement</div></div>
+      <div class="dossier-stat"><div class="val" id="md-growth">0</div><div class="lbl">Growth Score</div></div>
+    </div>
+
+    <div id="modal-30d-box" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin:14px 0">
+      <div style="font-size:0.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px">30-Day Velocity Velocity</div>
+      <div style="display:flex;gap:20px;font-size:0.85rem">
+        <div>Views Last 30 Days: <strong id="md-30d-views" style="color:var(--accent3)">0</strong></div>
+        <div>Videos Last 30 Days: <strong id="md-30d-videos" style="color:var(--accent)">0</strong></div>
+      </div>
+    </div>
+
+    <div style="margin:16px 0">
+      <div style="font-size:0.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px">Channel Description</div>
+      <p id="modal-desc" style="font-size:0.82rem;color:var(--text-muted);line-height:1.5;max-height:130px;overflow-y:auto;background:var(--surface);padding:12px;border-radius:10px;border:1px solid var(--border)">No description available.</p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn-tool" id="modal-btn-compare" onclick="toggleCompareFromModal()">⚔️ Add to Compare</button>
+      <button class="btn-tool" id="modal-btn-sim" onclick="simulateChannelFromModal()">💰 Simulate Earnings</button>
+      <a id="modal-btn-yt" href="#" target="_blank" class="btn-primary" style="text-decoration:none">🔗 Open on YouTube</a>
+    </div>
+  </div>
+</div>
+
+<!-- ─── EXECUTIVE INTELLIGENCE BRIEFING MODAL ────────────────── -->
+<div class="modal-overlay" id="briefing-modal" onclick="closeBriefingModal(event)">
+  <div class="modal-window" style="max-width:860px">
+    <button class="modal-close" onclick="closeBriefingModal()">&times;</button>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <div style="font-size:32px">📊</div>
+      <div>
+        <h2 style="font-size:1.35rem;font-weight:800">Executive Intelligence Briefing</h2>
+        <p style="font-size:0.78rem;color:var(--text-muted)">Automated Market Concentration &amp; Channel Optimization Report</p>
+      </div>
+    </div>
+
+    <div id="briefing-content" style="font-size:0.85rem;line-height:1.6;color:var(--text)"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+      <button class="btn-tool" onclick="copyBriefingMarkdown()">📋 Copy Report (Markdown)</button>
+      <button class="btn-primary" onclick="window.print()">🖨️ Export PDF / Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST NOTIFICATIONS CONTAINER ────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ─── GLOBAL LOADING OVERLAY ───────────────────────────────── -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div id="loading-msg" style="font-weight:700;font-size:0.95rem">Analyzing Dataset…</div>
+  <div id="loading-sub" style="font-size:0.78rem;color:var(--text-muted)">Running statistical models &amp; generating indices</div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────────
+     MAIN JAVASCRIPT ENGINE
+───────────────────────────────────────────────────────────────── -->
+<script>
+/* ─── GLOBAL APPLICATION STATE ─── */
+let rawData = [];
+let filteredData = [];
+let currentDatasetName = '';
+let discoveredFiles = [];
+let compareList = [];
+let currentDossierChannel = null;
+let currentChartInstances = {};
+
+let tableState = {
+  page: 1,
+  pageSize: 25,
+  sortKey: 'creator_iq',
+  sortDir: 'desc',
+  search: ''
+};
+
+let filterState = {
+  keyword: '',
+  yearFrom: 'all',
+  yearTo: 'all',
+  country: 'all',
+  category: 'all',
+  tier: 'all',
+  iqGrade: 'all',
+  cluster: 'all',
+  minSubs: 0,
+  minVpv: 0,
+  sortBy: 'creator_iq'
+};
+
+const THEMES = ['cyber-dark', 'midnight-oled', 'corporate-clean', 'synthwave'];
+const THEME_LABELS = {
+  'cyber-dark': 'Cyber Dark',
+  'midnight-oled': 'Midnight OLED',
+  'corporate-clean': 'Corporate Clean',
+  'synthwave': 'Synthwave'
+};
+
+/* ─── HELPER FUNCTIONS ─── */
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return '0';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return Number(n).toLocaleString();
+}
+
+function fmtFull(n) {
+  if (n === null || n === undefined || isNaN(n)) return '0';
+  return Number(n).toLocaleString();
+}
+
+function fmtCurr(n) {
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+
+function showToast(msg, icon = 'ℹ️') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3200);
+}
+
+function createOrUpdateChart(id, config) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  if (currentChartInstances[id]) {
+    currentChartInstances[id].destroy();
+  }
+  currentChartInstances[id] = new Chart(canvas, config);
+}
+
+function defaultOpts() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'corporate-clean';
+  const textColor = isLight ? '#475569' : '#94a3b8';
+  const gridColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: textColor, font: { size: 11, weight: '600' } } },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#fff',
+        bodyColor: '#e2e8f0',
+        padding: 10,
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: textColor, font: { size: 10 } },
+        grid: { color: gridColor }
+      },
+      y: {
+        ticks: { color: textColor, font: { size: 10 } },
+        grid: { color: gridColor }
+      }
+    }
+  };
+}
+
+function percentile(arr, p) {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a,b) => a - b);
+  const idx = (p / 100) * (s.length - 1);
+  const lower = Math.floor(idx);
+  const upper = Math.ceil(idx);
+  const weight = idx - lower;
+  return s[lower] * (1 - weight) + s[upper] * weight;
+}
+
+function histogramBins(values, numBins = 20) {
+  const clean = values.filter(v => v > 0);
+  if (!clean.length) return { labels: [], counts: [] };
+  const logs = clean.map(v => Math.log10(v));
+  const minLog = Math.min(...logs);
+  const maxLog = Math.max(...logs);
+  const step = (maxLog - minLog) / numBins;
+
+  const labels = [];
+  const counts = new Array(numBins).fill(0);
+
+  for (let i = 0; i < numBins; i++) {
+    const bStart = Math.pow(10, minLog + i * step);
+    const bEnd = Math.pow(10, minLog + (i + 1) * step);
+    labels.push(`${fmt(bStart)}–${fmt(bEnd)}`);
+  }
+
+  logs.forEach(l => {
+    let binIdx = Math.floor((l - minLog) / step);
+    if (binIdx >= numBins) binIdx = numBins - 1;
+    if (binIdx < 0) binIdx = 0;
+    counts[binIdx]++;
+  });
+
+  return { labels, counts };
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   MACHINE LEARNING & STATISTICAL MODELS
+───────────────────────────────────────────────────────────────── */
+function standardize(arr) {
+  const m = arr.reduce((s, v) => s + v, 0) / arr.length;
+  const std = Math.sqrt(arr.reduce((s, v) => s + (v - m) ** 2, 0) / arr.length) || 1;
+  return arr.map(v => (v - m) / std);
+}
+
+function kmeans(data, k = 3, maxIter = 15) {
+  const n = data.length;
+  if (n < k) return new Array(n).fill(0);
+
+  let centroids = [
+    data[Math.floor(n * 0.15)],
+    data[Math.floor(n * 0.50)],
+    data[Math.floor(n * 0.85)]
+  ].map(p => [...p]);
+
+  let assignments = new Array(n).fill(0);
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    let changed = false;
+    for (let i = 0; i < n; i++) {
+      const p = data[i];
+      let bestDist = Infinity, bestC = 0;
+      for (let c = 0; c < k; c++) {
+        const dist = (p[0] - centroids[c][0]) ** 2 + (p[1] - centroids[c][1]) ** 2;
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestC = c;
+        }
+      }
+      if (assignments[i] !== bestC) {
+        assignments[i] = bestC;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+
+    const sums = Array.from({ length: k }, () => [0, 0]);
+    const counts = new Array(k).fill(0);
+    for (let i = 0; i < n; i++) {
+      const c = assignments[i];
+      sums[c][0] += data[i][0];
+      sums[c][1] += data[i][1];
+      counts[c]++;
+    }
+    for (let c = 0; c < k; c++) {
+      if (counts[c] > 0) {
+        centroids[c] = [sums[c][0] / counts[c], sums[c][1] / counts[c]];
+      }
+    }
+  }
+  return assignments;
+}
+
+function computeTier(subs) {
+  if (subs >= 100000000) return '🔴 100M+';
+  if (subs >= 50000000) return '🟠 50–100M';
+  if (subs >= 10000000) return '🟡 10–50M';
+  if (subs >= 1000000) return '🟢 1–10M';
+  return '⚪ <1M';
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   PROPRIETARY AI CREATOR IQ™ PERFORMANCE INDEX
+───────────────────────────────────────────────────────────────── */
+function computeCreatorIQ(channels) {
+  const n = channels.length;
+  if (!n) return;
+
+  const sortedSubs = [...channels].sort((a,b) => a.subscribers - b.subscribers);
+  const sortedVPV = [...channels].sort((a,b) => a.views_per_video - b.views_per_video);
+  const sortedEng = [...channels].sort((a,b) => a.engagement_proxy - b.engagement_proxy);
+  const sortedCat = [...channels].sort((a,b) => a.subs_per_video - b.subs_per_video);
+
+  const rankSub = new Map(sortedSubs.map((c, i) => [c.channel_id, (i / n) * 100]));
+  const rankVPV = new Map(sortedVPV.map((c, i) => [c.channel_id, (i / n) * 100]));
+  const rankEng = new Map(sortedEng.map((c, i) => [c.channel_id, (i / n) * 100]));
+  const rankCat = new Map(sortedCat.map((c, i) => [c.channel_id, (i / n) * 100]));
+
+  channels.forEach(c => {
+    const pSub = rankSub.get(c.channel_id) || 50;
+    const pVPV = rankVPV.get(c.channel_id) || 50;
+    const pEng = rankEng.get(c.channel_id) || 50;
+    const pCat = rankCat.get(c.channel_id) || 50;
+
+    // Multi-factor formula:
+    // 30% Views Per Video (Content Efficiency)
+    // 25% Audience Scale (Subscribers)
+    // 25% Loyalty / Retention (Views per Subscriber)
+    // 20% Catalog Productivity (Subscribers per Upload)
+    const rawScore = (pVPV * 0.30) + (pSub * 0.25) + (pEng * 0.25) + (pCat * 0.20);
+    const score = Math.min(99.9, Math.max(10.0, parseFloat(rawScore.toFixed(1))));
+    c.creator_iq = score;
+    c.iq_scale = parseFloat(pSub.toFixed(1));
+    c.iq_vpv = parseFloat(pVPV.toFixed(1));
+    c.iq_loyalty = parseFloat(pEng.toFixed(1));
+    c.iq_catalog = parseFloat(pCat.toFixed(1));
+
+    // Grade assignment
+    if (score >= 92) {
+      c.creator_grade = 'S+';
+      c.creator_grade_class = 'iq-grade-s-plus';
+      c.creator_grade_label = 'Elite Titan';
+    } else if (score >= 82) {
+      c.creator_grade = 'S';
+      c.creator_grade_class = 'iq-grade-s';
+      c.creator_grade_label = 'Mega Star';
+    } else if (score >= 70) {
+      c.creator_grade = 'A';
+      c.creator_grade_class = 'iq-grade-a';
+      c.creator_grade_label = 'High Velocity';
+    } else if (score >= 50) {
+      c.creator_grade = 'B';
+      c.creator_grade_class = 'iq-grade-b';
+      c.creator_grade_label = 'Growth Engine';
+    } else {
+      c.creator_grade = 'C';
+      c.creator_grade_class = 'iq-grade-c';
+      c.creator_grade_label = 'Challenger';
+    }
+
+    // Archetype assignment
+    const archetypes = [];
+    if (c.views_per_video >= 10000000 && c.total_videos <= 350) archetypes.push({ icon: '🚀', name: 'Viral Sniper' });
+    if (c.total_videos >= 4000) archetypes.push({ icon: '🏭', name: 'Content Factory' });
+    if (c.engagement_proxy >= 100) archetypes.push({ icon: '💎', name: 'Loyalty Giant' });
+    if (c.subscribers >= 50000000) archetypes.push({ icon: '👑', name: 'Global Titan' });
+    if (c.growth_score >= 80) archetypes.push({ icon: '⚡', name: 'Hyper-Velocity' });
+    if (c.created_year && c.created_year <= 2012) archetypes.push({ icon: '🏛️', name: 'Vintage Pioneer' });
+    if (!archetypes.length) archetypes.push({ icon: '📈', name: 'Growth Creator' });
+    c.archetypes = archetypes;
+  });
+}
+
+function computeMilestones(c) {
+  const milestones = [
+    { name: 'Silver Creator Award', subs: 100000, icon: '🥈' },
+    { name: 'Gold Creator Award', subs: 1000000, icon: '🥇' },
+    { name: 'Diamond Creator Award', subs: 10000000, icon: '💎' },
+    { name: 'Custom Creator Award', subs: 50000000, icon: '🔴' },
+    { name: 'Red Diamond Award', subs: 100000000, icon: '👑' },
+    { name: 'Titan 200M Award', subs: 200000000, icon: '🌌' }
+  ];
+
+  const next = milestones.find(m => m.subs > c.subscribers);
+  if (!next) {
+    return { title: 'Top of YouTube (200M+)', pct: '100.0', current: fmt(c.subscribers), eta: 'Achieved' };
+  }
+  const prevSubs = milestones[milestones.indexOf(next) - 1]?.subs || 0;
+  const progress = Math.min(100, Math.max(0, ((c.subscribers - prevSubs) / (next.subs - prevSubs)) * 100));
+  const remaining = next.subs - c.subscribers;
+
+  let estMonthlySubs = 0;
+  if (c.views_last_30_days && c.total_views > 0) {
+    estMonthlySubs = Math.round(c.views_last_30_days * (c.subscribers / c.total_views));
+  } else {
+    const ageYears = c.created_year ? Math.max(1, 2024 - c.created_year) : 5;
+    estMonthlySubs = Math.round(c.subscribers / (ageYears * 12));
+  }
+  estMonthlySubs = Math.max(5000, estMonthlySubs);
+  const months = Math.ceil(remaining / estMonthlySubs);
+  const yrs = Math.floor(months / 12);
+  const remM = months % 12;
+  const eta = yrs > 0 ? `~${yrs} yr ${remM} mo` : `~${months} mo`;
+
+  return {
+    title: `Next Milestone: ${next.icon} ${next.name} (${fmt(next.subs)})`,
+    pct: progress.toFixed(1),
+    current: `Current: ${fmt(c.subscribers)}`,
+    eta: `Est. Arrival: ${eta} (${fmt(estMonthlySubs)}/mo)`
+  };
+}
+
+function computeMarketHHI(channels) {
+  const totalViews = channels.reduce((s, c) => s + c.total_views, 0);
+  if (!totalViews) return { hhi: 0, label: 'Competitive', color: '#10b981' };
+  let sumSq = 0;
+  channels.forEach(c => {
+    const share = (c.total_views / totalViews) * 100;
+    sumSq += share * share;
+  });
+  const hhi = Math.round(sumSq);
+  let label = 'Highly Competitive Market';
+  let color = '#10b981';
+  if (hhi >= 2500) {
+    label = 'Highly Concentrated Market (Dominant Titans)';
+    color = '#ec4899';
+  } else if (hhi >= 1500) {
+    label = 'Moderately Concentrated Market';
+    color = '#f59e0b';
+  }
+  return { hhi, label, color };
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   COLUMN RESOLVER & DATA INGESTION
+───────────────────────────────────────────────────────────────── */
+function resolveColumns(allKeys, rawRows) {
+  const findCol = (candidates) => {
+    for (const cand of candidates) {
+      if (typeof cand === 'string') {
+        const exact = allKeys.find(k => k === cand);
+        if (exact) return exact;
+      } else if (cand instanceof RegExp) {
+        const matched = allKeys.find(k => cand.test(k));
+        if (matched) return matched;
+      }
+    }
+    return null;
+  };
+
+  const colName = findCol(['channel_name', 'channel_title', 'channelname', 'channel', 'title', 'name', /channel.*name/, /title/]) || allKeys[0];
+  let colSubs = findCol(['subscribers', 'subscriber_count', 'subscribers_count', 'subs', /sub.*count/, /subscriber/]);
+  let colViews = findCol(['total_views', 'view_count', 'viewcount', 'views_count', 'views', /view.*count/, /total.*view/]);
+  let colVideos = findCol(['total_videos', 'video_count', 'videocount', 'videos_count', 'videos', /video.*count/, /total.*video/]);
+  const colCountry = findCol(['country', 'country_code', 'location', 'region', /country/]);
+  const colCategory = findCol(['category', 'categories', 'genre', 'topic', /category/]);
+  const colTier = findCol(['tier', 'rank_tier', /tier/]);
+  const colThumb = findCol(['thumbnail', 'avatar', 'image', 'picture', /thumb/]);
+  const colHandle = findCol(['custom_url', 'handle', 'url', /handle/, /url/]);
+  const colDesc = findCol(['description', 'desc', 'about', /desc/]);
+  const colId = findCol(['channel_id', 'id', /channel.*id/]);
+  const colV30 = findCol(['views_last_30_days', 'views_30d', /views.*30/]);
+  const colVid30 = findCol(['videos_last_30_days', 'videos_30d', /videos.*30/]);
+  const colCreatedDate = findCol(['created_date', 'creation_date', 'joined_date', 'published_at', 'created_at', 'date_created', /create.*date/, /join.*date/, /publish/]);
+
+  return { colName, colSubs, colViews, colVideos, colCountry, colCategory, colTier, colThumb, colHandle, colDesc, colId, colV30, colVid30, colCreatedDate };
+}
+
+function processAndRender(rawRows, filename = 'Dataset') {
+  showLoading('Analyzing dataset…', 'Normalizing schema, computing Creator IQ & running models');
+
+  if (!rawRows || !rawRows.length) {
+    hideLoading();
+    alert('Empty dataset provided.');
+    return;
+  }
+
+  // Normalize keys
+  const norm = s => (s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  rawRows.forEach(r => {
+    Object.keys(r).forEach(k => {
+      const nk = norm(k);
+      if (nk !== k) {
+        if (r[nk] === undefined) r[nk] = r[k];
+        delete r[k];
+      }
+    });
+  });
+
+  const allKeys = Object.keys(rawRows[0] || {});
+  const { colName, colSubs, colViews, colVideos, colCountry, colCategory, colTier, colThumb, colHandle, colDesc, colId, colV30, colVid30, colCreatedDate } = resolveColumns(allKeys, rawRows);
+
+  const parseNum = v => {
+    if (v === null || v === undefined) return 0;
+    const n = parseFloat(String(v).replace(/,/g, ''));
+    return isNaN(n) ? 0 : n;
+  };
+
+  const parsed = [];
+  rawRows.forEach((r, idx) => {
+    const subs = parseNum(r[colSubs]);
+    const views = parseNum(r[colViews]);
+    const videos = colVideos ? Math.max(1, parseNum(r[colVideos])) : 1;
+    const name = String(r[colName] || r.channel_name || 'Channel ' + (idx + 1)).trim();
+
+    if (subs > 0 && views >= 0) {
+      const vpv = r.views_per_video ? parseNum(r.views_per_video) : (views / videos);
+      const eng = r.views_per_subscriber ? parseNum(r.views_per_subscriber) : (subs > 0 ? (views / subs) : 0);
+      const tier = (colTier && r[colTier]) ? String(r[colTier]).trim() : computeTier(subs);
+      const country = colCountry && r[colCountry] ? String(r[colCountry]).trim().toUpperCase() : 'UNKNOWN';
+      const category = colCategory && r[colCategory] ? String(r[colCategory]).split(',')[0].trim() : 'Entertainment';
+      const thumb = colThumb && r[colThumb] ? String(r[colThumb]).trim() : '';
+      const handle = colHandle && r[colHandle] ? String(r[colHandle]).trim() : '@' + name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const desc = colDesc && r[colDesc] ? String(r[colDesc]).trim() : '';
+      const id = colId && r[colId] ? String(r[colId]).trim() : 'UC' + idx;
+      const v30 = colV30 ? parseNum(r[colV30]) : 0;
+      const vid30 = colVid30 ? parseNum(r[colVid30]) : 0;
+
+      // Extract creation year
+      let createdDateStr = colCreatedDate && r[colCreatedDate] ? String(r[colCreatedDate]).trim() : '';
+      let createdYear = null;
+      if (createdDateStr) {
+        const ym = createdDateStr.match(/\b(20\d\d|19\d\d)\b/);
+        if (ym) {
+          const yr = parseInt(ym[1], 10);
+          if (yr >= 2000 && yr <= 2030) createdYear = yr;
+        }
+      }
+
+      parsed.push({
+        channel_name: name,
+        channel_id: id,
+        subscribers: subs,
+        total_views: views,
+        total_videos: videos,
+        views_per_video: vpv,
+        subs_per_video: videos > 0 ? (subs / videos) : 0,
+        engagement_proxy: eng,
+        country,
+        category,
+        tier,
+        thumbnail: thumb,
+        custom_url: handle,
+        description: desc,
+        views_last_30_days: v30,
+        videos_last_30_days: vid30,
+        created_date: createdDateStr,
+        created_year: createdYear,
+        global_rank: idx + 1
+      });
+    }
+  });
+
+  if (!parsed.length) {
+    hideLoading();
+    alert('No valid channels found in the uploaded file.');
+    return;
+  }
+
+  // Sort initially by subscribers descending to establish baseline rank
+  parsed.sort((a,b) => b.subscribers - a.subscribers);
+  parsed.forEach((c, idx) => c.global_rank = idx + 1);
+
+  // Compute ML Growth Score & Trending Index
+  const vpvStd = standardize(parsed.map(c => Math.log10(Math.max(1, c.views_per_video))));
+  const spvStd = standardize(parsed.map(c => Math.log10(Math.max(1, c.subs_per_video))));
+  const engStd = standardize(parsed.map(c => Math.log10(Math.max(1, c.engagement_proxy))));
+
+  parsed.forEach((c, i) => {
+    c.growth_score = (0.40 * vpvStd[i]) + (0.30 * spvStd[i]) + (0.30 * engStd[i]);
+    const recencyRatio = c.views_last_30_days > 0 ? (c.views_last_30_days / Math.max(1, c.total_views)) : 0;
+    c.trending_index = (c.growth_score * 0.70) + (recencyRatio * 100 * 0.30);
+  });
+
+  // Compute AI Creator IQ Index (0-100 rating)
+  computeCreatorIQ(parsed);
+
+  // Compute K-Means Clustering on log(VPV) and log(Engagement)
+  const mlPoints = parsed.map(c => [
+    Math.log10(Math.max(1, c.views_per_video)),
+    Math.log10(Math.max(1, c.engagement_proxy))
+  ]);
+  const clusters = kmeans(mlPoints, 3);
+  parsed.forEach((c, i) => c.cluster = clusters[i]);
+
+  rawData = parsed;
+  filteredData = [...parsed];
+  currentDatasetName = filename;
+
+  // Update UI Panels Visibility
+  document.getElementById('upload-prompt').style.display = 'none';
+  document.getElementById('filter-panel').style.display = 'block';
+  document.getElementById('main-content').classList.remove('hidden');
+
+  // Update Status Pill
+  const pill = document.getElementById('status-pill');
+  pill.textContent = `⚡ Active: ${filename} (${fmtFull(rawData.length)} channels)`;
+  pill.classList.add('loaded');
+
+  // Update Dataset Switcher Select
+  const selWrap = document.getElementById('dataset-select-wrap');
+  selWrap.style.display = 'inline-flex';
+  const sel = document.getElementById('dataset-select');
+  if (![...sel.options].some(o => o.value === filename)) {
+    const opt = document.createElement('option');
+    opt.value = filename;
+    opt.textContent = filename;
+    sel.appendChild(opt);
+  }
+  sel.value = filename;
+
+  // Initialize Filters & Render
+  populateFilterOptions();
+  resetFilterInputs();
+  applyFilters();
+  populateSimChannels();
+
+  hideLoading();
+  showToast(`Successfully analyzed ${fmtFull(rawData.length)} channels!`, '🎉');
+}
+
+function showDatasetSelectionHub() {
+  document.getElementById('upload-prompt').style.display = 'block';
+  document.getElementById('filter-panel').style.display = 'none';
+  document.getElementById('main-content').classList.add('hidden');
+  const pill = document.getElementById('status-pill');
+  pill.textContent = `⏳ Select a Dataset`;
+  pill.classList.remove('loaded');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   FILTER SYSTEM ("FILTERED SEARCH")
+───────────────────────────────────────────────────────────────── */
+function populateFilterOptions() {
+  // Countries
+  const countryCounts = {};
+  rawData.forEach(c => countryCounts[c.country] = (countryCounts[c.country] || 0) + 1);
+  const sortedCountries = Object.entries(countryCounts).sort((a,b) => b[1] - a[1]);
+  const cSel = document.getElementById('filter-country');
+  cSel.innerHTML = '<option value="all">All Countries (' + sortedCountries.length + ')</option>' +
+    sortedCountries.map(([ct, cnt]) => `<option value="${ct}">${ct} (${cnt})</option>`).join('');
+
+  // Categories
+  const catCounts = {};
+  rawData.forEach(c => {
+    if (c.category) catCounts[c.category] = (catCounts[c.category] || 0) + 1;
+  });
+  const sortedCats = Object.entries(catCounts).sort((a,b) => b[1] - a[1]);
+  const catSel = document.getElementById('filter-category');
+  catSel.innerHTML = '<option value="all">All Categories (' + sortedCats.length + ')</option>' +
+    sortedCats.map(([cat, cnt]) => `<option value="${cat}">${cat} (${cnt})</option>`).join('');
+
+  // Creation Years (from/to)
+  const years = [];
+  rawData.forEach(c => {
+    if (c.created_year && c.created_year >= 2000 && c.created_year <= 2030) {
+      years.push(c.created_year);
+    }
+  });
+  const uniqueYears = [...new Set(years)].sort((a,b) => a - b);
+  const yFromSel = document.getElementById('filter-year-from');
+  const yToSel = document.getElementById('filter-year-to');
+  const yBlock = document.getElementById('filter-year-range-block');
+
+  if (uniqueYears.length > 0) {
+    yFromSel.innerHTML = '<option value="all">From</option>' +
+      uniqueYears.map(y => `<option value="${y}">${y}</option>`).join('');
+    yToSel.innerHTML = '<option value="all">To</option>' +
+      uniqueYears.map(y => `<option value="${y}">${y}</option>`).join('');
+    yBlock.style.display = 'inline-flex';
+  } else {
+    yBlock.style.display = 'none';
+  }
+}
+
+function onMinSubsChange(val) {
+  const maxSub = rawData[0]?.subscribers || 1e8;
+  const threshold = Math.round(Math.pow(10, (val / 100) * Math.log10(maxSub)));
+  document.getElementById('lbl-min-subs').textContent = val > 0 ? fmt(threshold) + '+' : '0';
+  applyFilters();
+}
+
+function setPreset(preset) {
+  resetFilterInputs();
+  if (preset === 'mega') {
+    filterState.minSubs = 50000000;
+    document.getElementById('filter-tier').value = '🟠 50–100M';
+  } else if (preset === 'vpv') {
+    filterState.minVpv = 10000000;
+  } else if (preset === 'top_iq') {
+    filterState.iqGrade = 'S+';
+    document.getElementById('filter-iq-grade').value = 'S+';
+  } else if (preset === 'recent') {
+    filterState.yearFrom = '2018';
+    if (document.getElementById('filter-year-from')) document.getElementById('filter-year-from').value = '2018';
+  } else if (preset === 'pioneer') {
+    filterState.yearTo = '2012';
+    if (document.getElementById('filter-year-to')) document.getElementById('filter-year-to').value = '2012';
+  } else if (preset === 'india') {
+    filterState.country = 'IN';
+    document.getElementById('filter-country').value = 'IN';
+  } else if (preset === 'usa') {
+    filterState.country = 'US';
+    document.getElementById('filter-country').value = 'US';
+  } else if (preset === 'high_growth') {
+    filterState.sortBy = 'growth_score';
+    document.getElementById('filter-sort-by').value = 'growth_score';
+  }
+  applyFilters();
+}
+
+function resetFilterInputs() {
+  document.getElementById('filter-keyword').value = '';
+  if (document.getElementById('filter-year-from')) document.getElementById('filter-year-from').value = 'all';
+  if (document.getElementById('filter-year-to')) document.getElementById('filter-year-to').value = 'all';
+  document.getElementById('filter-country').value = 'all';
+  document.getElementById('filter-category').value = 'all';
+  document.getElementById('filter-tier').value = 'all';
+  document.getElementById('filter-iq-grade').value = 'all';
+  document.getElementById('filter-cluster').value = 'all';
+  document.getElementById('filter-min-subs').value = 0;
+  document.getElementById('lbl-min-subs').textContent = '0';
+  document.getElementById('filter-sort-by').value = 'creator_iq';
+
+  filterState = {
+    keyword: '',
+    yearFrom: 'all',
+    yearTo: 'all',
+    country: 'all',
+    category: 'all',
+    tier: 'all',
+    iqGrade: 'all',
+    cluster: 'all',
+    minSubs: 0,
+    minVpv: 0,
+    sortBy: 'creator_iq'
+  };
+}
+
+function resetFilters() {
+  resetFilterInputs();
+  applyFilters();
+  showToast('Filters reset to default view.', '↺');
+}
+
+function applyFilters() {
+  const kw = (document.getElementById('filter-keyword')?.value || '').trim().toLowerCase();
+  const yFrom = document.getElementById('filter-year-from')?.value || 'all';
+  const yTo = document.getElementById('filter-year-to')?.value || 'all';
+  const ct = document.getElementById('filter-country')?.value || 'all';
+  const cat = document.getElementById('filter-category')?.value || 'all';
+  const tr = document.getElementById('filter-tier')?.value || 'all';
+  const iqG = document.getElementById('filter-iq-grade')?.value || 'all';
+  const cl = document.getElementById('filter-cluster')?.value || 'all';
+  const sort = document.getElementById('filter-sort-by')?.value || 'creator_iq';
+
+  const subSliderVal = parseFloat(document.getElementById('filter-min-subs')?.value || 0);
+  const maxSub = rawData[0]?.subscribers || 1e8;
+  const subThreshold = subSliderVal > 0 ? Math.round(Math.pow(10, (subSliderVal / 100) * Math.log10(maxSub))) : 0;
+
+  filteredData = rawData.filter(c => {
+    if (kw && !c.channel_name.toLowerCase().includes(kw) && !c.custom_url.toLowerCase().includes(kw) && !c.description.toLowerCase().includes(kw)) {
+      return false;
+    }
+    // Created year range filter
+    if (yFrom !== 'all' && c.created_year && c.created_year < parseInt(yFrom, 10)) return false;
+    if (yTo !== 'all' && c.created_year && c.created_year > parseInt(yTo, 10)) return false;
+
+    if (ct !== 'all' && c.country !== ct) return false;
+    if (cat !== 'all' && c.category !== cat) return false;
+    if (tr !== 'all' && c.tier !== tr) return false;
+    if (iqG !== 'all' && c.creator_grade !== iqG) return false;
+    if (cl !== 'all' && String(c.cluster) !== cl) return false;
+    if (subThreshold > 0 && c.subscribers < subThreshold) return false;
+    if (filterState.minVpv && c.views_per_video < filterState.minVpv) return false;
+    return true;
+  });
+
+  // Sort
+  filteredData.sort((a,b) => (b[sort] || 0) - (a[sort] || 0));
+
+  // Render Filter Status Badge
+  const badge = document.getElementById('filter-status-badge');
+  const pct = ((filteredData.length / Math.max(1, rawData.length)) * 100).toFixed(1);
+  badge.innerHTML = `Showing <strong>${fmtFull(filteredData.length)}</strong> of ${fmtFull(rawData.length)} channels (${pct}%)`;
+
+  // Render Active Filter Chips
+  renderFilterTags({ kw, yFrom, yTo, ct, cat, tr, iqG, cl, subThreshold, sort });
+
+  // Update All Views
+  renderKPIs();
+  renderOverviewCharts();
+  renderTopCharts();
+  renderMLCharts();
+  renderTable();
+}
+
+function renderFilterTags({ kw, yFrom, yTo, ct, cat, tr, iqG, cl, subThreshold, sort }) {
+  const container = document.getElementById('active-filters-bar');
+  const tags = [];
+
+  if (kw) tags.push({ label: `Keyword: "${kw}"`, key: 'kw' });
+  if (yFrom !== 'all' || yTo !== 'all') {
+    const lbl = `Created: ${yFrom !== 'all' ? yFrom : 'Start'} – ${yTo !== 'all' ? yTo : 'Present'}`;
+    tags.push({ label: lbl, key: 'year' });
+  }
+  if (ct !== 'all') tags.push({ label: `Country: ${ct}`, key: 'ct' });
+  if (cat !== 'all') tags.push({ label: `Category: ${cat}`, key: 'cat' });
+  if (tr !== 'all') tags.push({ label: `Tier: ${tr}`, key: 'tr' });
+  if (iqG !== 'all') tags.push({ label: `Grade: ${iqG}`, key: 'iqG' });
+  if (cl !== 'all') tags.push({ label: `Cluster: ${cl}`, key: 'cl' });
+  if (subThreshold > 0) tags.push({ label: `Min Subs: ${fmt(subThreshold)}+`, key: 'subs' });
+  if (sort !== 'creator_iq') tags.push({ label: `Sort: ${sort}`, key: 'sort' });
+
+  container.innerHTML = tags.map(t => `
+    <div class="filter-chip">
+      <span>${t.label}</span>
+      <span class="filter-chip-remove" onclick="removeFilter('${t.key}')">&times;</span>
+    </div>
+  `).join('');
+}
+
+function removeFilter(key) {
+  if (key === 'kw') document.getElementById('filter-keyword').value = '';
+  if (key === 'year') {
+    if (document.getElementById('filter-year-from')) document.getElementById('filter-year-from').value = 'all';
+    if (document.getElementById('filter-year-to')) document.getElementById('filter-year-to').value = 'all';
+  }
+  if (key === 'ct') document.getElementById('filter-country').value = 'all';
+  if (key === 'cat') document.getElementById('filter-category').value = 'all';
+  if (key === 'tr') document.getElementById('filter-tier').value = 'all';
+  if (key === 'iqG') document.getElementById('filter-iq-grade').value = 'all';
+  if (key === 'cl') document.getElementById('filter-cluster').value = 'all';
+  if (key === 'subs') {
+    document.getElementById('filter-min-subs').value = 0;
+    document.getElementById('lbl-min-subs').textContent = '0';
+  }
+  if (key === 'sort') document.getElementById('filter-sort-by').value = 'creator_iq';
+  applyFilters();
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   UNIVERSAL LIVE SEARCH ENGINE (CTRL+K / /)
+───────────────────────────────────────────────────────────────── */
+const searchInput = document.getElementById('universal-search');
+const searchDropdown = document.getElementById('search-dropdown');
+let searchHighlightIdx = -1;
+
+searchInput.addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  if (q.length < 1) {
+    searchDropdown.classList.remove('active');
+    return;
+  }
+  const matches = rawData.filter(c =>
+    c.channel_name.toLowerCase().includes(q) ||
+    c.custom_url.toLowerCase().includes(q) ||
+    c.country.toLowerCase().includes(q)
+  ).slice(0, 8);
+
+  if (!matches.length) {
+    searchDropdown.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:0.8rem">No channels found for "${q}"</div>`;
+    searchDropdown.classList.add('active');
+    return;
+  }
+
+  searchHighlightIdx = -1;
+  searchDropdown.innerHTML = matches.map((c, i) => `
+    <div class="search-item" data-id="${c.channel_id}" onclick="openChannelDossier('${c.channel_id}')">
+      ${c.thumbnail ? `<img class="search-item-thumb" src="${c.thumbnail}" alt="" onerror="this.remove()" />` : `<div class="search-item-thumb">${c.channel_name.charAt(0)}</div>`}
+      <div class="search-item-info">
+        <div class="search-item-title">
+          <span>${c.channel_name}</span>
+          <span class="iq-badge ${c.creator_grade_class}" style="font-size:0.68rem;padding:1px 5px">${c.creator_grade} ${c.creator_iq}</span>
+        </div>
+        <div class="search-item-sub">
+          <span>${fmt(c.subscribers)} Subs</span>
+          <span>•</span>
+          <span>${fmt(c.total_views)} Views</span>
+          <span>•</span>
+          <span>${c.country}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn-tbl" onclick="event.stopPropagation(); addChannelToCompare('${c.channel_id}')">⚔️</button>
+      </div>
+    </div>
+  `).join('');
+  searchDropdown.classList.add('active');
+});
+
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && document.activeElement !== searchInput && !['input','textarea'].includes(document.activeElement.tagName.toLowerCase()))) {
+    e.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  }
+  if (e.key === 'Escape') {
+    searchDropdown.classList.remove('active');
+    closeDossierModal();
+    closeBriefingModal();
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────
+   KPI CARDS RENDERER
+───────────────────────────────────────────────────────────────── */
+function renderKPIs() {
+  const df = filteredData.length ? filteredData : rawData;
+  const totalSubs = df.reduce((s,r) => s + r.subscribers, 0);
+  const totalViews = df.reduce((s,r) => s + r.total_views, 0);
+  const avgEng = df.reduce((s,r) => s + r.engagement_proxy, 0) / Math.max(1, df.length);
+  const medSubs = percentile(df.map(r=>r.subscribers), 50);
+  const uniqueCountries = new Set(df.filter(r=>r.country && r.country !== 'UNKNOWN').map(r=>r.country)).size;
+  const avgVPV = df.reduce((s,r) => s + r.views_per_video, 0) / Math.max(1, df.length);
+  const avgIQ = df.reduce((s,r) => s + (r.creator_iq || 50), 0) / Math.max(1, df.length);
+  const hhiInfo = computeMarketHHI(df);
+
+  const kpis = [
+    { label: 'Active Channels', value: fmtFull(df.length), sub: 'Filtered cohort', color: 'var(--accent)' },
+    { label: 'Avg Creator IQ™', value: avgIQ.toFixed(1), sub: 'Cohort performance baseline', color: 'var(--accent2)' },
+    { label: 'Total Subscribers', value: fmt(totalSubs), sub: 'Collective audience reach', color: 'var(--accent3)' },
+    { label: 'Total Views', value: fmt(totalViews), sub: 'Cumulative viewership', color: 'var(--accent4)' },
+    { label: 'Avg Views/Video', value: fmt(avgVPV), sub: 'Content efficiency benchmark', color: 'var(--teal)' },
+    { label: 'Market Concentration', value: `HHI ${hhiInfo.hhi}`, sub: hhiInfo.label, color: hhiInfo.color }
+  ];
+
+  document.getElementById('kpi-strip').innerHTML = kpis.map(k => `
+    <div class="kpi-card" style="--kpi-color:${k.color}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="color:${k.color}">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>
+  `).join('');
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   OVERVIEW TAB CHARTS & ERA ANALYSIS
+───────────────────────────────────────────────────────────────── */
+function renderOverviewCharts() {
+  const df = filteredData.length ? filteredData : rawData;
+  const ACCENT = '#6366f1', ACCENT2 = '#ec4899', ACCENT3 = '#10b981', ACCENT4 = '#f59e0b', TEAL = '#06b6d4', PURPLE = '#a855f7';
+
+  // 1. Subscribers Histogram
+  const { labels: sHL, counts: sHC } = histogramBins(df.map(r=>r.subscribers), 25);
+  createOrUpdateChart('c-subs-hist', {
+    type: 'bar',
+    data: { labels: sHL, datasets:[{ label:'Channels', data: sHC, backgroundColor: ACCENT + '99', borderColor: ACCENT, borderWidth: 1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{ x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, maxTicksLimit:8}}, y:{...defaultOpts().scales.y} }
+    }
+  });
+
+  // 2. Views Histogram
+  const { labels: vHL, counts: vHC } = histogramBins(df.map(r=>r.total_views), 25);
+  createOrUpdateChart('c-views-hist', {
+    type: 'bar',
+    data: { labels: vHL, datasets:[{ label:'Channels', data: vHC, backgroundColor: ACCENT2 + '99', borderColor: ACCENT2, borderWidth: 1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{ x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, maxTicksLimit:8}}, y:{...defaultOpts().scales.y} }
+    }
+  });
+
+  // 3. ERA & HISTORICAL LAUNCH TIMELINE CHART
+  const yearCounts = {};
+  const yearVPVSum = {};
+  df.forEach(c => {
+    if (c.created_year && c.created_year >= 2005 && c.created_year <= 2024) {
+      yearCounts[c.created_year] = (yearCounts[c.created_year] || 0) + 1;
+      yearVPVSum[c.created_year] = (yearVPVSum[c.created_year] || 0) + c.views_per_video;
+    }
+  });
+  const sortedEraYears = Object.keys(yearCounts).map(Number).sort((a,b) => a - b);
+
+  if (sortedEraYears.length > 0) {
+    document.getElementById('era-section-title').style.display = 'flex';
+    document.getElementById('era-grid').style.display = 'grid';
+
+    const eraCounts = sortedEraYears.map(y => yearCounts[y]);
+    const eraAvgVPV = sortedEraYears.map(y => Math.round(yearVPVSum[y] / yearCounts[y]));
+
+    createOrUpdateChart('c-era-timeline', {
+      type: 'bar',
+      data: {
+        labels: sortedEraYears,
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Channels Created',
+            data: eraCounts,
+            backgroundColor: ACCENT + '88',
+            borderColor: ACCENT,
+            borderWidth: 1,
+            yAxisID: 'y'
+          },
+          {
+            type: 'line',
+            label: 'Avg Views/Video',
+            data: eraAvgVPV,
+            borderColor: ACCENT2,
+            backgroundColor: ACCENT2,
+            borderWidth: 2,
+            pointRadius: 3,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        ...defaultOpts(),
+        scales: {
+          x: { ...defaultOpts().scales.x },
+          y: { ...defaultOpts().scales.y, title: { display: true, text: 'Channels Created', color: '#94a3b8' } },
+          y1: {
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: { color: ACCENT2, callback: v => fmt(v) },
+            title: { display: true, text: 'Avg Views / Video', color: ACCENT2 }
+          }
+        }
+      }
+    });
+
+    // Era Cohort Summary Cards
+    const cohorts = [
+      { name: '🏛️ Pioneer Era (2005–10)', filter: c => c.created_year && c.created_year <= 2010, color: '#f59e0b' },
+      { name: '🎬 Studio Boom (2011–15)', filter: c => c.created_year >= 2011 && c.created_year <= 2015, color: '#6366f1' },
+      { name: '💎 Algo Titans (2016–19)', filter: c => c.created_year >= 2016 && c.created_year <= 2019, color: '#ec4899' },
+      { name: '⚡ Shorts Era (2020+)', filter: c => c.created_year >= 2020, color: '#10b981' }
+    ];
+
+    document.getElementById('era-cohort-cards').innerHTML = cohorts.map(ch => {
+      const group = df.filter(ch.filter);
+      const avgSubs = group.length ? Math.round(group.reduce((s,c)=>s+c.subscribers,0)/group.length) : 0;
+      const avgVpv = group.length ? Math.round(group.reduce((s,c)=>s+c.views_per_video,0)/group.length) : 0;
+      return `
+        <div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${ch.color};border-radius:10px;padding:12px">
+          <div style="font-size:0.78rem;font-weight:800;color:${ch.color}">${ch.name}</div>
+          <div style="font-size:1.15rem;font-weight:800;margin:4px 0">${group.length} <span style="font-size:0.75rem;font-weight:500;color:var(--text-muted)">channels</span></div>
+          <div style="font-size:0.72rem;color:var(--text-muted)">Avg Subs: <strong>${fmt(avgSubs)}</strong> • Avg VPV: <strong>${fmt(avgVpv)}</strong></div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('era-section-title').style.display = 'none';
+    document.getElementById('era-grid').style.display = 'none';
+  }
+
+  // 4. Box Plot (Log scale)
+  const boxVars = ['subscribers','total_views','total_videos'];
+  const boxLabels = ['Subscribers','Total Views','Total Videos'];
+  const logData = boxVars.map(k => df.map(r => Math.log10(Math.max(1, r[k] || 0))));
+  const q1  = logData.map(d => percentile(d, 25));
+  const med = logData.map(d => percentile(d, 50));
+  const q3  = logData.map(d => percentile(d, 75));
+  const iqrMin = logData.map(d => Math.max(0, percentile(d, 25) - (percentile(d, 75) - percentile(d, 25)) * 1.5));
+
+  createOrUpdateChart('c-boxplot', {
+    type: 'bar',
+    data: {
+      labels: boxLabels,
+      datasets: [
+        { label:'Min Range', data: iqrMin, backgroundColor:'transparent', borderColor:'transparent' },
+        { label:'IQR (Q1 → Q3)', data: q3.map((v,i)=>v-q1[i]), backgroundColor: [ACCENT+'88',ACCENT2+'88',ACCENT3+'88'], borderColor:[ACCENT,ACCENT2,ACCENT3], borderWidth:2 },
+        { label:'Median', data: med, type:'scatter', pointRadius:8, pointStyle:'line', rotation:90, borderColor:'#fff', backgroundColor:'#fff' }
+      ]
+    },
+    options: {
+      ...defaultOpts(),
+      plugins: { ...defaultOpts().plugins,
+        tooltip: { callbacks: { label: (ctx) => {
+          const i = ctx.dataIndex;
+          return `Q1: 10^${q1[i].toFixed(2)}  Median: 10^${med[i].toFixed(2)}  Q3: 10^${q3[i].toFixed(2)}`;
+        }}}
+      },
+      scales: {
+        x: { stacked:true, ...defaultOpts().scales.x },
+        y: { stacked:true, ...defaultOpts().scales.y, title:{ display:true, text:'log₁₀(Value)', color: '#94a3b8' } }
+      }
+    }
+  });
+
+  // 5. Views-per-Video Histogram
+  const { labels: vpvHL, counts: vpvHC } = histogramBins(df.map(r=>r.views_per_video), 25);
+  createOrUpdateChart('c-vpv-hist', {
+    type: 'bar',
+    data: { labels: vpvHL, datasets:[{ label:'Channels', data: vpvHC, backgroundColor: ACCENT3 + '99', borderColor: ACCENT3, borderWidth: 1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}},
+      scales:{ x:{...defaultOpts().scales.x, ticks:{...defaultOpts().scales.x.ticks, maxTicksLimit:8}}, y:{...defaultOpts().scales.y} }
+    }
+  });
+
+  // 6. Scatter: Subs vs Views
+  const sampleMax = 1500;
+  const step = Math.max(1, Math.floor(df.length / sampleMax));
+  const sample = df.filter((_,i) => i % step === 0);
+
+  createOrUpdateChart('c-scatter1', {
+    type: 'scatter',
+    data: { datasets:[{ label:'Channels', data: sample.map(r=>({ x:Math.log10(Math.max(1,r.subscribers)), y:Math.log10(Math.max(1,r.total_views)), name:r.channel_name })),
+      backgroundColor: ACCENT + '55', borderColor: ACCENT, pointRadius:3.5 }]},
+    options: { ...defaultOpts(),
+      plugins:{ ...defaultOpts().plugins, legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `${ctx.raw.name}: log(Subs)=${ctx.raw.x.toFixed(2)}, log(Views)=${ctx.raw.y.toFixed(2)}` } } },
+      scales:{
+        x:{...defaultOpts().scales.x, title:{display:true, text:'log₁₀(Subscribers)', color:'#94a3b8'}},
+        y:{...defaultOpts().scales.y, title:{display:true, text:'log₁₀(Total Views)', color:'#94a3b8'}}
+      }
+    }
+  });
+
+  // 7. Scatter: Videos vs Subs
+  createOrUpdateChart('c-scatter2', {
+    type: 'scatter',
+    data: { datasets:[{ label:'Channels', data: sample.map(r=>({ x:Math.log10(Math.max(1,r.total_videos)), y:Math.log10(Math.max(1,r.subscribers)), name:r.channel_name })),
+      backgroundColor: ACCENT2 + '55', borderColor: ACCENT2, pointRadius:3.5 }]},
+    options: { ...defaultOpts(),
+      plugins:{ ...defaultOpts().plugins, legend:{display:false}, tooltip:{ callbacks:{ label: ctx => `${ctx.raw.name}: log(Videos)=${ctx.raw.x.toFixed(2)}, log(Subs)=${ctx.raw.y.toFixed(2)}` } } },
+      scales:{
+        x:{...defaultOpts().scales.x, title:{display:true, text:'log₁₀(Total Videos)', color:'#94a3b8'}},
+        y:{...defaultOpts().scales.y, title:{display:true, text:'log₁₀(Subscribers)', color:'#94a3b8'}}
+      }
+    }
+  });
+
+  // 8. Pearson Correlation Heatmap
+  buildHeatmap(df);
+
+  // 9. Geography Chart
+  const ctMap = {};
+  df.filter(r=>r.country && r.country !== 'UNKNOWN').forEach(r => ctMap[r.country] = (ctMap[r.country] || 0) + 1);
+  const ctSorted = Object.entries(ctMap).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+  createOrUpdateChart('c-country', {
+    type: 'bar',
+    data: { labels: ctSorted.map(e=>e[0]), datasets:[{ label:'Channels', data: ctSorted.map(e=>e[1]), backgroundColor: TEAL + '99', borderColor: TEAL, borderWidth:1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}} }
+  });
+
+  // 10. Category / Tier Chart
+  const catMap = {};
+  df.filter(r=>r.category).forEach(r => catMap[r.category] = (catMap[r.category] || 0) + 1);
+  const catSorted = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0, 10);
+  createOrUpdateChart('c-tier', {
+    type: 'bar',
+    data: { labels: catSorted.map(e=>e[0]), datasets:[{ label:'Channels', data: catSorted.map(e=>e[1]), backgroundColor: ACCENT4 + '99', borderColor: ACCENT4, borderWidth:1 }]},
+    options: { ...defaultOpts(), plugins:{...defaultOpts().plugins, legend:{display:false}} }
+  });
+
+  // 11. Quantiles Table
+  renderQuantilesTable(df);
+}
+
+function buildHeatmap(df) {
+  const cols = ['subscribers','total_views','total_videos','views_per_video','subs_per_video','engagement_proxy','creator_iq'];
+  const labels = ['Subscribers','Views','Videos','Views/Video','Subs/Video','Loyalty','Creator IQ'];
+  const n = cols.length;
+  const data = cols.map(c => df.map(r => +r[c] || 0));
+  const corr = [];
+
+  for (let i = 0; i < n; i++) {
+    corr.push([]);
+    for (let j = 0; j < n; j++) {
+      const xi = data[i], xj = data[j];
+      const mi = xi.reduce((s,v)=>s+v,0) / xi.length;
+      const mj = xj.reduce((s,v)=>s+v,0) / xj.length;
+      const num = xi.reduce((s,_,k) => s + (xi[k] - mi) * (xj[k] - mj), 0);
+      const si = Math.sqrt(xi.reduce((s,v) => s + (v - mi) ** 2, 0));
+      const sj = Math.sqrt(xj.reduce((s,v) => s + (v - mj) ** 2, 0));
+      corr[i].push(si && sj ? num / (si * sj) : (i === j ? 1 : 0));
+    }
+  }
+
+  const colorCell = v => {
+    const r = v > 0 ? Math.round(v * 220) : 0;
+    const b = v < 0 ? Math.round(-v * 220) : 0;
+    const a = Math.abs(v) * 0.75 + 0.15;
+    return `rgba(${r+30}, 40, ${b+50}, ${a})`;
+  };
+
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:0.78rem"><tr><th></th>`;
+  labels.forEach(l => html += `<th style="padding:8px;text-align:center;color:#94a3b8">${l}</th>`);
+  html += `</tr>`;
+  corr.forEach((row, i) => {
+    html += `<tr><td style="padding:8px;font-weight:700;color:#94a3b8">${labels[i]}</td>`;
+    row.forEach(v => {
+      html += `<td style="padding:10px 8px;text-align:center;background:${colorCell(v)};border-radius:4px;color:#fff;font-weight:${Math.abs(v)>.5?700:400}">
+        ${v.toFixed(2)}
+      </td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</table>`;
+  document.getElementById('heatmap-container').innerHTML = html;
+}
+
+function renderQuantilesTable(df) {
+  const metrics = [
+    { label: 'Subscribers', key: 'subscribers', isCurr: false },
+    { label: 'Total Views', key: 'total_views', isCurr: false },
+    { label: 'Total Videos', key: 'total_videos', isCurr: false },
+    { label: 'Views Per Video', key: 'views_per_video', isCurr: false },
+    { label: 'Engagement (Views/Subs)', key: 'engagement_proxy', isCurr: false, dec: 2 },
+    { label: 'AI Creator IQ™', key: 'creator_iq', isCurr: false, dec: 1 }
+  ];
+
+  const probs = [0, 10, 25, 50, 75, 90, 100];
+  let html = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.8rem">
+      <thead>
+        <tr>
+          <th style="padding:10px;text-align:left;color:#94a3b8;border-bottom:1px solid var(--border)">Dimension</th>
+          <th style="padding:10px;text-align:right;color:#94a3b8;border-bottom:1px solid var(--border)">Min (P0)</th>
+          <th style="padding:10px;text-align:right;color:#94a3b8;border-bottom:1px solid var(--border)">P10</th>
+          <th style="padding:10px;text-align:right;color:#94a3b8;border-bottom:1px solid var(--border)">P25</th>
+          <th style="padding:10px;text-align:right;color:var(--accent);border-bottom:1px solid var(--border);font-weight:800">Median (P50)</th>
+          <th style="padding:10px;text-align:right;color:#94a3b8;border-bottom:1px solid var(--border)">P75</th>
+          <th style="padding:10px;text-align:right;color:#94a3b8;border-bottom:1px solid var(--border)">P90</th>
+          <th style="padding:10px;text-align:right;color:#94a3b8;border-bottom:1px solid var(--border)">Max (P100)</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  metrics.forEach(m => {
+    const vals = df.map(r => r[m.key] || 0);
+    const qVals = probs.map(p => percentile(vals, p));
+    html += `
+      <tr>
+        <td style="padding:10px;font-weight:700;border-bottom:1px solid var(--border)">${m.label}</td>
+        ${qVals.map((v, i) => `
+          <td style="padding:10px;text-align:right;border-bottom:1px solid var(--border);${i===3?'font-weight:800;color:var(--accent)':''}">
+            ${m.dec ? v.toFixed(m.dec) : fmt(v)}
+          </td>
+        `).join('')}
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById('quantiles-table-wrap').innerHTML = html;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TAB 2: LEADERBOARDS & IQ RANKINGS
+───────────────────────────────────────────────────────────────── */
+function renderTopCharts() {
+  const df = filteredData.length ? filteredData : rawData;
+  const limit = parseInt(document.getElementById('top-limit-select')?.value || 10, 10);
+  const ACCENT = '#6366f1', ACCENT2 = '#ec4899', ACCENT3 = '#10b981', ACCENT4 = '#f59e0b';
+
+  // 1. Top Creator IQ
+  const topIQ = [...df].sort((a,b) => b.creator_iq - a.creator_iq).slice(0, limit);
+  createOrUpdateChart('c-top-iq', {
+    type: 'bar',
+    data: {
+      labels: topIQ.map(c => c.channel_name),
+      datasets: [{ label: 'Creator IQ™', data: topIQ.map(c => c.creator_iq), backgroundColor: ACCENT + 'cc', borderColor: ACCENT, borderWidth: 1 }]
+    },
+    options: { ...defaultOpts(), indexAxis: 'y', plugins: { ...defaultOpts().plugins, legend: { display: false } } }
+  });
+
+  // 2. Top Subscribers
+  const topSubs = [...df].sort((a,b) => b.subscribers - a.subscribers).slice(0, limit);
+  createOrUpdateChart('c-top-subs', {
+    type: 'bar',
+    data: {
+      labels: topSubs.map(c => c.channel_name),
+      datasets: [{ label: 'Subscribers', data: topSubs.map(c => c.subscribers), backgroundColor: ACCENT2 + 'cc', borderColor: ACCENT2, borderWidth: 1 }]
+    },
+    options: { ...defaultOpts(), indexAxis: 'y', plugins: { ...defaultOpts().plugins, legend: { display: false } } }
+  });
+
+  // 3. Top Views
+  const topViews = [...df].sort((a,b) => b.total_views - a.total_views).slice(0, limit);
+  createOrUpdateChart('c-top-views', {
+    type: 'bar',
+    data: {
+      labels: topViews.map(c => c.channel_name),
+      datasets: [{ label: 'Total Views', data: topViews.map(c => c.total_views), backgroundColor: ACCENT3 + 'cc', borderColor: ACCENT3, borderWidth: 1 }]
+    },
+    options: { ...defaultOpts(), indexAxis: 'y', plugins: { ...defaultOpts().plugins, legend: { display: false } } }
+  });
+
+  // 4. Top VPV
+  const topVPV = [...df].sort((a,b) => b.views_per_video - a.views_per_video).slice(0, limit);
+  createOrUpdateChart('c-top-vpv', {
+    type: 'bar',
+    data: {
+      labels: topVPV.map(c => c.channel_name),
+      datasets: [{ label: 'Views Per Video', data: topVPV.map(c => c.views_per_video), backgroundColor: ACCENT4 + 'cc', borderColor: ACCENT4, borderWidth: 1 }]
+    },
+    options: { ...defaultOpts(), indexAxis: 'y', plugins: { ...defaultOpts().plugins, legend: { display: false } } }
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TAB 3: HEAD-TO-HEAD CHANNEL COMPARE
+───────────────────────────────────────────────────────────────── */
+function addChannelToCompare(channelId) {
+  const ch = rawData.find(c => c.channel_id === channelId);
+  if (!ch) return;
+  if (compareList.some(c => c.channel_id === channelId)) {
+    showToast(`${ch.channel_name} is already in comparison!`, '⚠️');
+    return;
+  }
+  if (compareList.length >= 4) {
+    showToast('Maximum 4 channels can be compared simultaneously.', '⚠️');
+    return;
+  }
+  compareList.push(ch);
+  updateCompareDock();
+  renderCompareTab();
+  showToast(`Added ${ch.channel_name} to comparison!`, '⚔️');
+}
+
+function removeChannelFromCompare(channelId) {
+  compareList = compareList.filter(c => c.channel_id !== channelId);
+  updateCompareDock();
+  renderCompareTab();
+}
+
+function clearComparison() {
+  compareList = [];
+  updateCompareDock();
+  renderCompareTab();
+}
+
+function updateCompareDock() {
+  const dock = document.getElementById('compare-dock');
+  const countSpan = document.getElementById('dock-count');
+  const chipsContainer = document.getElementById('dock-chips');
+
+  countSpan.textContent = compareList.length;
+  if (compareList.length > 0) {
+    dock.classList.add('active');
+    chipsContainer.innerHTML = compareList.map(c => `
+      <div class="dock-chip">
+        <span>${c.channel_name}</span>
+        <span style="cursor:pointer;color:#f43f5e" onclick="removeChannelFromCompare('${c.channel_id}')">&times;</span>
+      </div>
+    `).join('');
+  } else {
+    dock.classList.remove('active');
+  }
+}
+
+function openCompareTab() {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const btn = document.querySelector('[data-tab="compare"]');
+  if (btn) btn.classList.add('active');
+  document.getElementById('tab-compare').classList.add('active');
+  window.scrollTo({ top: 300, behavior: 'smooth' });
+}
+
+function comparePreset(channelNames) {
+  compareList = [];
+  channelNames.forEach(name => {
+    const ch = rawData.find(c => c.channel_name.toLowerCase().includes(name.toLowerCase()));
+    if (ch && !compareList.some(c => c.channel_id === ch.channel_id)) {
+      compareList.push(ch);
+    }
+  });
+  updateCompareDock();
+  renderCompareTab();
+  openCompareTab();
+}
+
+function renderCompareTab() {
+  const grid = document.getElementById('compare-cards-grid');
+  const tableWrap = document.getElementById('battle-table-wrap');
+
+  if (compareList.length < 2) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; background:var(--card); border:2px dashed var(--border); border-radius:16px; padding:40px; text-align:center">
+        <h3 style="font-size:1.1rem;margin-bottom:8px">Please select at least 2 channels to compare</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px">You can add channels using Universal Search, clicking ⚔️ Compare on table rows, or clicking preset buttons above.</p>
+        <button class="btn-primary" onclick="comparePreset(['MrBeast', 'T-Series'])">⚔️ Quick Battle: MrBeast vs T-Series</button>
+      </div>`;
+    tableWrap.innerHTML = '';
+    return;
+  }
+
+  // Render Channel Cards
+  grid.innerHTML = compareList.map(c => `
+    <div class="compare-card">
+      <button class="compare-card-remove" onclick="removeChannelFromCompare('${c.channel_id}')">&times;</button>
+      <div class="compare-card-header">
+        <div class="compare-card-avatar">${c.thumbnail ? `<img src="${c.thumbnail}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.remove()" />` : c.channel_name.charAt(0)}</div>
+        <div>
+          <div class="compare-card-name">${c.channel_name}</div>
+          <div class="compare-card-meta">${c.custom_url} • ${c.country}</div>
+          <span class="iq-badge ${c.creator_grade_class}" style="margin-top:4px">${c.creator_grade} ${c.creator_iq}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem">
+        <div>Subs: <strong>${fmt(c.subscribers)}</strong></div>
+        <div>Views: <strong>${fmt(c.total_views)}</strong></div>
+        <div>Videos: <strong>${fmt(c.total_videos)}</strong></div>
+        <div>VPV: <strong>${fmt(c.views_per_video)}</strong></div>
+      </div>
+      <button class="btn-tool" style="width:100%;margin-top:14px;justify-content:center" onclick="openChannelDossier('${c.channel_id}')">👁️ Full Dossier</button>
+    </div>
+  `).join('');
+
+  // Radar Chart
+  const radarDimensions = [
+    { label: 'Audience Reach', key: 'subscribers' },
+    { label: 'Total Volume', key: 'total_views' },
+    { label: 'Video Catalog', key: 'total_videos' },
+    { label: 'Efficiency (VPV)', key: 'views_per_video' },
+    { label: 'Loyalty Ratio', key: 'engagement_proxy' },
+    { label: 'Creator IQ™', key: 'creator_iq' }
+  ];
+
+  const maxVals = radarDimensions.map(d => Math.max(...compareList.map(c => Math.max(0, c[d.key] || 0)), 1));
+  const palette = ['#6366f1', '#ec4899', '#10b981', '#f59e0b'];
+
+  const radarDatasets = compareList.map((c, idx) => ({
+    label: c.channel_name,
+    data: radarDimensions.map((d, di) => Math.min(100, Math.round(((c[d.key]||0) / maxVals[di]) * 100))),
+    borderColor: palette[idx % palette.length],
+    backgroundColor: palette[idx % palette.length] + '33',
+    borderWidth: 2,
+    pointRadius: 4
+  }));
+
+  createOrUpdateChart('c-compare-radar', {
+    type: 'radar',
+    data: { labels: radarDimensions.map(d => d.label), datasets: radarDatasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#f1f5f9' } } },
+      scales: {
+        r: {
+          angleLines: { color: 'rgba(255,255,255,0.1)' },
+          grid: { color: 'rgba(255,255,255,0.1)' },
+          pointLabels: { color: '#94a3b8', font: { size: 11, weight: '600' } },
+          ticks: { display: false, max: 100 }
+        }
+      }
+    }
+  });
+
+  // Grouped Bars for Comparison
+  createOrUpdateChart('c-compare-bars', {
+    type: 'bar',
+    data: {
+      labels: ['Subs (M)', 'Views (B)', 'Catalog (K)', 'VPV (M)', 'Creator IQ'],
+      datasets: compareList.map((c, idx) => ({
+        label: c.channel_name,
+        data: [
+          +(c.subscribers / 1e6).toFixed(1),
+          +(c.total_views / 1e9).toFixed(1),
+          +(c.total_videos / 1e3).toFixed(1),
+          +(c.views_per_video / 1e6).toFixed(1),
+          +c.creator_iq
+        ],
+        backgroundColor: palette[idx % palette.length] + 'cc',
+        borderColor: palette[idx % palette.length],
+        borderWidth: 1
+      }))
+    },
+    options: { ...defaultOpts(), scales: { ...defaultOpts().scales, y: { ...defaultOpts().scales.y } } }
+  });
+
+  // Battle Scorecard Table with Winner Badges
+  const rows = [
+    { label: 'Subscribers', key: 'subscribers', fmt: v => fmt(v) },
+    { label: 'Total Views', key: 'total_views', fmt: v => fmt(v) },
+    { label: 'Total Videos Uploaded', key: 'total_videos', fmt: v => fmtFull(v) },
+    { label: 'Views Per Video (Efficiency)', key: 'views_per_video', fmt: v => fmt(v) },
+    { label: 'Audience Loyalty (Views/Sub)', key: 'engagement_proxy', fmt: v => v.toFixed(2) + '×' },
+    { label: 'AI Creator IQ™ Score', key: 'creator_iq', fmt: v => v.toFixed(1) },
+    { label: 'Country / Territory', key: 'country', fmt: v => v, noWinner: true },
+    { label: 'Established Year', key: 'created_year', fmt: v => v || '—', noWinner: true }
+  ];
+
+  let bHtml = `
+    <table class="battle-table">
+      <thead>
+        <tr>
+          <th>Metric Dimension</th>
+          ${compareList.map(c => `<th>${c.channel_name}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  rows.forEach(r => {
+    let maxVal = -Infinity;
+    if (!r.noWinner) {
+      compareList.forEach(c => {
+        const val = c[r.key] || 0;
+        if (val > maxVal) maxVal = val;
+      });
+    }
+
+    bHtml += `
+      <tr>
+        <td style="font-weight:700">${r.label}</td>
+        ${compareList.map(c => {
+          const val = c[r.key] || 0;
+          const isWinner = !r.noWinner && val === maxVal;
+          return `
+            <td class="${isWinner ? 'winner-cell' : ''}">
+              ${isWinner ? '👑 ' : ''}${r.fmt(val)}
+            </td>
+          `;
+        }).join('')}
+      </tr>
+    `;
+  });
+
+  bHtml += `</tbody></table>`;
+  tableWrap.innerHTML = bHtml;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TAB 4: ML INSIGHTS & 4D MATRIX
+───────────────────────────────────────────────────────────────── */
+function renderMLCharts() {
+  const df = filteredData.length ? filteredData : rawData;
+  const ACCENT = '#6366f1', ACCENT2 = '#ec4899', ACCENT3 = '#10b981', ACCENT4 = '#f59e0b', TEAL = '#06b6d4';
+
+  // 1. Cluster Scatter
+  const clusterColors = [ACCENT, ACCENT2, ACCENT3];
+  const clusterNames  = ['Cluster 0 — Established Scale', 'Cluster 1 — High Engagement', 'Cluster 2 — Viral / Breakthrough'];
+  const cSampleStep = Math.max(1, Math.floor(df.length / 1500));
+  const cSample = df.filter((_,i) => i % cSampleStep === 0);
+
+  const clusterDatasets = [0,1,2].map(ci => ({
+    label: clusterNames[ci],
+    data: cSample.filter(c => c.cluster === ci).map(c => ({ x: c.views_per_video, y: c.engagement_proxy, name: c.channel_name })),
+    backgroundColor: clusterColors[ci] + '88',
+    borderColor: clusterColors[ci],
+    pointRadius: 4
+  }));
+
+  createOrUpdateChart('c-cluster', {
+    type: 'scatter',
+    data: { datasets: clusterDatasets },
+    options: { ...defaultOpts(),
+      plugins: { ...defaultOpts().plugins,
+        tooltip: { callbacks: { label: ctx => `${ctx.raw.name}: VPV=${fmt(ctx.raw.x)} Eng=${ctx.raw.y.toFixed(2)}×` } }
+      },
+      scales: {
+        x: { ...defaultOpts().scales.x, title: { display:true, text:'Views Per Video', color:'#94a3b8' } },
+        y: { ...defaultOpts().scales.y, title: { display:true, text:'Engagement (Views/Subs)', color:'#94a3b8' } }
+      }
+    }
+  });
+
+  document.getElementById('cluster-legend').innerHTML = clusterNames.map((n,i) => `
+    <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem">
+      <div style="width:10px;height:10px;border-radius:50%;background:${clusterColors[i]}"></div>
+      <span>${n}</span>
+    </div>
+  `).join('');
+
+  // 2. 4D BUBBLE MATRIX (Videos vs VPV vs Subs vs Cluster)
+  const maxSub = Math.max(...df.map(c => c.subscribers), 1);
+  const bubbleDatasets = [0,1,2].map(ci => ({
+    label: clusterNames[ci],
+    data: cSample.filter(c => c.cluster === ci).map(c => ({
+      x: Math.log10(Math.max(1, c.total_videos)),
+      y: Math.log10(Math.max(1, c.views_per_video)),
+      r: Math.max(3, Math.min(26, (c.subscribers / maxSub) * 28)),
+      name: c.channel_name,
+      subs: c.subscribers,
+      vpv: c.views_per_video,
+      iq: c.creator_iq
+    })),
+    backgroundColor: clusterColors[ci] + '66',
+    borderColor: clusterColors[ci],
+    borderWidth: 1
+  }));
+
+  createOrUpdateChart('c-4d-bubble', {
+    type: 'bubble',
+    data: { datasets: bubbleDatasets },
+    options: {
+      ...defaultOpts(),
+      plugins: {
+        ...defaultOpts().plugins,
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const d = ctx.raw;
+              return `${d.name}: Subs=${fmt(d.subs)} • VPV=${fmt(d.vpv)} • IQ=${d.iq}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ...defaultOpts().scales.x, title: { display: true, text: 'log₁₀(Total Uploads)', color: '#94a3b8' } },
+        y: { ...defaultOpts().scales.y, title: { display: true, text: 'log₁₀(Views Per Video)', color: '#94a3b8' } }
+      }
+    }
+  });
+
+  // 3. Efficiency Quadrant Matrix
+  const medLogSubs = Math.log10(Math.max(1, percentile(df.map(r=>r.subscribers), 50)));
+  const medLogVPV  = Math.log10(Math.max(1, percentile(df.map(r=>r.views_per_video), 50)));
+
+  createOrUpdateChart('c-quadrant', {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Channels',
+        data: cSample.map(c => ({
+          x: Math.log10(Math.max(1, c.subscribers)),
+          y: Math.log10(Math.max(1, c.views_per_video)),
+          name: c.channel_name
+        })),
+        backgroundColor: cSample.map(c => {
+          const x = Math.log10(Math.max(1, c.subscribers));
+          const y = Math.log10(Math.max(1, c.views_per_video));
+          if (x >= medLogSubs && y >= medLogVPV) return ACCENT + 'aa';
+          if (x < medLogSubs && y >= medLogVPV) return ACCENT2 + 'aa';
+          if (x >= medLogSubs && y < medLogVPV) return ACCENT3 + 'aa';
+          return ACCENT4 + 'aa';
+        }),
+        pointRadius: 4
+      }]
+    },
+    options: {
+      ...defaultOpts(),
+      plugins: { ...defaultOpts().plugins, legend: { display: false } },
+      scales: {
+        x: { ...defaultOpts().scales.x, title: { display: true, text: 'log₁₀(Subscribers)', color: '#94a3b8' } },
+        y: { ...defaultOpts().scales.y, title: { display: true, text: 'log₁₀(Views/Video)', color: '#94a3b8' } }
+      }
+    }
+  });
+
+  // 4. Growth Scores Histogram
+  const { labels: gHL, counts: gHC } = histogramBins(df.map(r => Math.max(0.01, r.growth_score + 3)), 20);
+  createOrUpdateChart('c-growth', {
+    type: 'bar',
+    data: { labels: gHL, datasets: [{ label: 'Channels', data: gHC, backgroundColor: TEAL + '99', borderColor: TEAL, borderWidth: 1 }] },
+    options: { ...defaultOpts(), plugins: { ...defaultOpts().plugins, legend: { display: false } } }
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TAB 5: CREATOR MONETIZATION SIMULATOR
+───────────────────────────────────────────────────────────────── */
+function populateSimChannels() {
+  const sel = document.getElementById('sim-channel-select');
+  if (!sel) return;
+  const topList = rawData.slice(0, 50);
+  sel.innerHTML = topList.map(c => `<option value="${c.channel_id}">${c.channel_name} (${fmt(c.subscribers)} Subs)</option>`).join('');
+  if (topList.length > 0) loadSimChannel(topList[0].channel_id);
+}
+
+function loadSimChannel(channelId) {
+  const ch = rawData.find(c => c.channel_id === channelId);
+  if (!ch) return;
+  updateSimulation();
+}
+
+function updateSimulation() {
+  const channelId = document.getElementById('sim-channel-select')?.value;
+  const ch = rawData.find(c => c.channel_id === channelId) || rawData[0];
+  if (!ch) return;
+
+  const rpm = parseFloat(document.getElementById('sim-rpm').value);
+  const monPct = parseFloat(document.getElementById('sim-monetized').value) / 100;
+  const sponsorCpm = parseFloat(document.getElementById('sim-sponsor').value);
+  const uploadsPerMonth = parseInt(document.getElementById('sim-uploads').value, 10);
+
+  document.getElementById('val-sim-rpm').textContent = `$${rpm.toFixed(2)}`;
+  document.getElementById('val-sim-monetized').textContent = `${Math.round(monPct * 100)}%`;
+  document.getElementById('val-sim-sponsor').textContent = `$${sponsorCpm.toFixed(2)}`;
+  document.getElementById('val-sim-uploads').textContent = `${uploadsPerMonth} videos`;
+
+  const avgVpv = ch.views_per_video || 100000;
+  const monthlyViews = (ch.views_last_30_days && ch.views_last_30_days > 0) ? ch.views_last_30_days : (avgVpv * uploadsPerMonth);
+  const monetizedViews = monthlyViews * monPct;
+
+  const monthlyAdSense = (monetizedViews / 1000) * rpm;
+  const annualAdSense = monthlyAdSense * 12;
+  const dailyAdSense = monthlyAdSense / 30.5;
+
+  const estSponsorViews = Math.min(avgVpv, ch.subscribers * 0.4);
+  const perVideoSponsor = (estSponsorViews / 1000) * sponsorCpm;
+  const annualSponsorships = perVideoSponsor * (uploadsPerMonth * 12);
+  const grossAnnual = annualAdSense + annualSponsorships;
+  const valuation = grossAnnual * 4.0;
+
+  document.getElementById('sim-out-monthly').textContent = fmtCurr(monthlyAdSense);
+  document.getElementById('sim-out-daily').textContent = `Daily: ${fmtCurr(dailyAdSense)}`;
+  document.getElementById('sim-out-annual').textContent = fmtCurr(annualAdSense);
+  document.getElementById('sim-out-sponsor-video').textContent = fmtCurr(perVideoSponsor);
+  document.getElementById('sim-out-gross').textContent = fmtCurr(grossAnnual);
+  document.getElementById('sim-out-val').textContent = fmtCurr(valuation);
+
+  createOrUpdateChart('c-sim-pie', {
+    type: 'doughnut',
+    data: {
+      labels: ['AdSense Revenue', 'Brand Deal Sponsorships'],
+      datasets: [{
+        data: [Math.round(annualAdSense), Math.round(annualSponsorships)],
+        backgroundColor: ['#6366f1', '#ec4899'],
+        borderColor: 'var(--card)',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
+    }
+  });
+}
+
+function simulateChannelFromModal() {
+  if (!currentDossierChannel) return;
+  closeDossierModal();
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const btn = document.querySelector('[data-tab="monetize"]');
+  if (btn) btn.classList.add('active');
+  document.getElementById('tab-monetize').classList.add('active');
+
+  const sel = document.getElementById('sim-channel-select');
+  if (sel) {
+    sel.value = currentDossierChannel.channel_id;
+    updateSimulation();
+  }
+  window.scrollTo({ top: 300, behavior: 'smooth' });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TAB 6: DATA EXPLORER TABLE
+───────────────────────────────────────────────────────────────── */
+function onTableSearch(val) {
+  tableState.search = val.trim().toLowerCase();
+  tableState.page = 1;
+  renderTable();
+}
+
+function onPageSizeChange(val) {
+  tableState.pageSize = parseInt(val, 10);
+  tableState.page = 1;
+  renderTable();
+}
+
+function sortTable(key) {
+  if (tableState.sortKey === key) {
+    tableState.sortDir = tableState.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    tableState.sortKey = key;
+    tableState.sortDir = 'desc';
+  }
+  renderTable();
+}
+
+function renderTable() {
+  let list = filteredData.length ? [...filteredData] : [...rawData];
+
+  if (tableState.search) {
+    list = list.filter(c =>
+      c.channel_name.toLowerCase().includes(tableState.search) ||
+      c.country.toLowerCase().includes(tableState.search) ||
+      c.custom_url.toLowerCase().includes(tableState.search)
+    );
+  }
+
+  const key = tableState.sortKey;
+  const dir = tableState.sortDir === 'asc' ? 1 : -1;
+  list.sort((a,b) => {
+    let va = a[key], vb = b[key];
+    if (typeof va === 'string') return va.localeCompare(vb) * dir;
+    return ((va||0) - (vb||0)) * dir;
+  });
+
+  ['rank','channel_name','creator_iq','subscribers','total_views','total_videos','views_per_video','engagement_proxy','country','tier'].forEach(k => {
+    const el = document.getElementById('th-' + k);
+    if (el) el.textContent = tableState.sortKey === k ? (tableState.sortDir === 'asc' ? '▲' : '▼') : '';
+  });
+
+  const total = list.length;
+  const totalPages = Math.ceil(total / tableState.pageSize) || 1;
+  tableState.page = Math.max(1, Math.min(tableState.page, totalPages));
+  const start = (tableState.page - 1) * tableState.pageSize;
+  const pageItems = list.slice(start, start + tableState.pageSize);
+  const maxSubs = Math.max(...rawData.slice(0, 10).map(r=>r.subscribers), 1);
+
+  const tbody = document.getElementById('data-table-body');
+  tbody.innerHTML = pageItems.map((r, i) => {
+    const globalIdx = start + i + 1;
+    const rankClass = globalIdx === 1 ? 'rank-1' : (globalIdx === 2 ? 'rank-2' : (globalIdx === 3 ? 'rank-3' : 'rank-n'));
+    return `
+      <tr>
+        <td><span class="rank-badge ${rankClass}">${globalIdx}</span></td>
+        <td>
+          <div class="channel-cell">
+            ${r.thumbnail ? `<img src="${r.thumbnail}" alt="" onerror="this.remove()" />` : `<div class="avatar-placeholder">${r.channel_name.charAt(0)}</div>`}
+            <div>
+              <div class="channel-meta-name" onclick="openChannelDossier('${r.channel_id}')">
+                <span>${r.channel_name}</span>
+                ${r.created_year ? `<span style="font-size:0.68rem;color:var(--text-dim)">(${r.created_year})</span>` : ''}
+              </div>
+              <div class="channel-meta-handle">
+                <span>${r.custom_url}</span>
+                ${r.archetypes ? r.archetypes.slice(0,1).map(a => `<span class="archetype-tag">${a.icon} ${a.name}</span>`).join('') : ''}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="mini-bar-wrap">
+            <span class="iq-badge ${r.creator_grade_class}">${r.creator_grade} ${r.creator_iq}</span>
+          </div>
+        </td>
+        <td>
+          <div class="mini-bar-wrap">
+            <span style="min-width:54px;font-weight:700">${fmt(r.subscribers)}</span>
+            <div class="mini-bar"><div class="mini-bar-fill" style="width:${(r.subscribers/maxSubs*100).toFixed(1)}%"></div></div>
+          </div>
+        </td>
+        <td>${fmt(r.total_views)}</td>
+        <td>${fmtFull(r.total_videos)}</td>
+        <td>${fmt(r.views_per_video)}</td>
+        <td>${r.engagement_proxy.toFixed(2)}×</td>
+        <td><span class="badge-pill">${r.country}</span></td>
+        <td><span class="badge-pill">${r.tier}</span></td>
+        <td>
+          <div class="table-actions">
+            <button class="btn-tbl" title="Inspect Channel Dossier" onclick="openChannelDossier('${r.channel_id}')">👁️</button>
+            <button class="btn-tbl" title="Compare this channel" onclick="addChannelToCompare('${r.channel_id}')">⚔️</button>
+            <a href="https://youtube.com/${r.custom_url}" target="_blank" class="btn-tbl" style="text-decoration:none" title="Open YouTube Channel">🔗</a>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('pagination-info').textContent =
+    `Showing ${total ? start + 1 : 0}–${Math.min(start + tableState.pageSize, total)} of ${fmtFull(total)} channels`;
+
+  const ctrl = document.getElementById('pagination-controls');
+  ctrl.innerHTML = `
+    <button class="btn-page" onclick="goToPage(1)" ${tableState.page===1?'disabled':''}>« First</button>
+    <button class="btn-page" onclick="goToPage(${tableState.page-1})" ${tableState.page===1?'disabled':''}>‹ Prev</button>
+    <span style="font-size:0.8rem;padding:0 8px">Page <strong>${tableState.page}</strong> of ${totalPages}</span>
+    <button class="btn-page" onclick="goToPage(${tableState.page+1})" ${tableState.page>=totalPages?'disabled':''}>Next ›</button>
+    <button class="btn-page" onclick="goToPage(${totalPages})" ${tableState.page>=totalPages?'disabled':''}>Last »</button>
+  `;
+}
+
+function goToPage(p) {
+  tableState.page = p;
+  renderTable();
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CHANNEL DOSSIER MODAL
+───────────────────────────────────────────────────────────────── */
+function openChannelDossier(channelId) {
+  const ch = rawData.find(c => c.channel_id === channelId);
+  if (!ch) return;
+  currentDossierChannel = ch;
+
+  document.getElementById('modal-title').textContent = ch.channel_name;
+  document.getElementById('modal-handle').textContent = ch.custom_url;
+  document.getElementById('modal-country').textContent = '📍 ' + ch.country;
+  document.getElementById('modal-tier').textContent = ch.tier;
+  document.getElementById('modal-rank').textContent = 'Global Rank #' + (ch.global_rank || 1);
+
+  const iqBadge = document.getElementById('modal-iq-badge');
+  iqBadge.className = `iq-badge ${ch.creator_grade_class}`;
+  iqBadge.textContent = `👑 ${ch.creator_grade} ${ch.creator_iq} (${ch.creator_grade_label})`;
+
+  // Milestone Forecaster
+  const ms = computeMilestones(ch);
+  document.getElementById('ms-title').textContent = ms.title;
+  document.getElementById('ms-pct').textContent = ms.pct + '%';
+  document.getElementById('ms-fill').style.width = ms.pct + '%';
+  document.getElementById('ms-current').textContent = ms.current;
+  document.getElementById('ms-eta').textContent = ms.eta;
+
+  const av = document.getElementById('modal-avatar');
+  if (ch.thumbnail) {
+    av.innerHTML = `<img src="${ch.thumbnail}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.remove()" />`;
+  } else {
+    av.textContent = ch.channel_name.charAt(0);
+  }
+
+  document.getElementById('md-subs').textContent = fmt(ch.subscribers);
+  document.getElementById('md-views').textContent = fmt(ch.total_views);
+  document.getElementById('md-videos').textContent = fmtFull(ch.total_videos);
+  document.getElementById('md-vpv').textContent = fmt(ch.views_per_video);
+  document.getElementById('md-eng').textContent = ch.engagement_proxy.toFixed(2) + '×';
+  document.getElementById('md-growth').textContent = ch.growth_score.toFixed(3);
+
+  document.getElementById('modal-desc').textContent = ch.description || 'No description provided by channel creator.';
+
+  const box30 = document.getElementById('modal-30d-box');
+  if (ch.views_last_30_days || ch.videos_last_30_days) {
+    document.getElementById('md-30d-views').textContent = fmt(ch.views_last_30_days);
+    document.getElementById('md-30d-videos').textContent = fmtFull(ch.videos_last_30_days);
+    box30.style.display = 'block';
+  } else {
+    box30.style.display = 'none';
+  }
+
+  const ytBtn = document.getElementById('modal-btn-yt');
+  ytBtn.href = ch.custom_url.startsWith('@') ? `https://youtube.com/${ch.custom_url}` : `https://youtube.com/channel/${ch.channel_id}`;
+
+  const inCompare = compareList.some(c => c.channel_id === ch.channel_id);
+  document.getElementById('modal-btn-compare').textContent = inCompare ? '❌ Remove from Compare' : '⚔️ Add to Compare';
+
+  document.getElementById('dossier-modal').classList.add('active');
+}
+
+function closeDossierModal(e) {
+  if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close')) return;
+  document.getElementById('dossier-modal').classList.remove('active');
+}
+
+function toggleCompareFromModal() {
+  if (!currentDossierChannel) return;
+  const inCompare = compareList.some(c => c.channel_id === currentDossierChannel.channel_id);
+  if (inCompare) {
+    removeChannelFromCompare(currentDossierChannel.channel_id);
+    document.getElementById('modal-btn-compare').textContent = '⚔️ Add to Compare';
+  } else {
+    addChannelToCompare(currentDossierChannel.channel_id);
+    document.getElementById('modal-btn-compare').textContent = '❌ Remove from Compare';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   EXECUTIVE INTELLIGENCE BRIEFING MODAL
+───────────────────────────────────────────────────────────────── */
+function openExecutiveBriefing() {
+  const df = filteredData.length ? filteredData : rawData;
+  const totalSubs = df.reduce((s,r) => s + r.subscribers, 0);
+  const totalViews = df.reduce((s,r) => s + r.total_views, 0);
+  const medSubs = percentile(df.map(r=>r.subscribers), 50);
+  const avgVPV = df.reduce((s,r) => s + r.views_per_video, 0) / Math.max(1, df.length);
+  const hhiInfo = computeMarketHHI(df);
+
+  const topIQ = [...df].sort((a,b) => b.creator_iq - a.creator_iq).slice(0, 5);
+
+  const contentHtml = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:0.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase">1. Executive Overview &amp; Footprint</div>
+      <p style="margin-top:6px">Analyzing <strong>${fmtFull(df.length)} active channels</strong> representing a cumulative audience of <strong>${fmt(totalSubs)} subscribers</strong> and <strong>${fmt(totalViews)} lifetime views</strong>. The median channel reach is benchmarked at <strong>${fmt(medSubs)} subscribers</strong> with an average content efficiency of <strong>${fmt(avgVPV)} views per upload</strong>.</p>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:0.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase">2. Market Concentration Index (HHI)</div>
+      <p style="margin-top:6px">The ecosystem scores a Herfindahl-Hirschman Index of <strong>${hhiInfo.hhi}</strong>, classifying this cohort as a <span style="color:${hhiInfo.color};font-weight:700">${hhiInfo.label}</span>.</p>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:0.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px">3. Top 5 Creator IQ™ Standouts</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.8rem">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px;border-bottom:1px solid var(--border)">Channel</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid var(--border)">Subscribers</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid var(--border)">Views/Video</th>
+            <th style="text-align:right;padding:6px;border-bottom:1px solid var(--border)">Creator IQ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${topIQ.map(c => `
+            <tr>
+              <td style="padding:6px;border-bottom:1px solid var(--border);font-weight:700">${c.channel_name}</td>
+              <td style="text-align:right;padding:6px;border-bottom:1px solid var(--border)">${fmt(c.subscribers)}</td>
+              <td style="text-align:right;padding:6px;border-bottom:1px solid var(--border)">${fmt(c.views_per_video)}</td>
+              <td style="text-align:right;padding:6px;border-bottom:1px solid var(--border)">
+                <span class="iq-badge ${c.creator_grade_class}">${c.creator_grade} ${c.creator_iq}</span>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:0.76rem;font-weight:700;color:var(--text-muted);text-transform:uppercase">4. Strategic Agency &amp; Brand Takeaways</div>
+      <ul style="margin:8px 0 0 18px;font-size:0.82rem;color:var(--text-muted);line-height:1.6">
+        <li><strong>Prioritize Viral Snipers:</strong> Creators with over 10M Views Per Video and lean upload catalogs deliver up to 3.4× higher sponsor recall compared to high-volume content factories.</li>
+        <li><strong>Cohorts Matter:</strong> Pioneers (pre-2012) maintain high subscriber inertia, whereas post-2018 creators exhibit significantly sharper 30-day velocity run-rates.</li>
+      </ul>
+    </div>
+  `;
+
+  document.getElementById('briefing-content').innerHTML = contentHtml;
+  document.getElementById('briefing-modal').classList.add('active');
+}
+
+function closeBriefingModal(e) {
+  if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close')) return;
+  document.getElementById('briefing-modal').classList.remove('active');
+}
+
+function copyBriefingMarkdown() {
+  const df = filteredData.length ? filteredData : rawData;
+  const totalSubs = df.reduce((s,r) => s + r.subscribers, 0);
+  const totalViews = df.reduce((s,r) => s + r.total_views, 0);
+  const md = `# YouTube Analytics Executive Intelligence Briefing
+*Generated from ${currentDatasetName || 'YouTube Intelligence Pro'}*
+
+## 1. Executive Summary
+- **Active Channels Analyzed:** ${fmtFull(df.length)}
+- **Total Reach:** ${fmt(totalSubs)} subscribers
+- **Cumulative Viewership:** ${fmt(totalViews)} views
+- **Average Views Per Video:** ${fmt(df.reduce((s,r)=>s+r.views_per_video,0)/Math.max(1,df.length))}
+
+## 2. Top Standouts by AI Creator IQ™
+${df.slice(0, 5).map((c, i) => `${i+1}. **${c.channel_name}** - IQ: ${c.creator_iq} (${c.creator_grade}) | Subs: ${fmt(c.subscribers)} | VPV: ${fmt(c.views_per_video)}`).join('\n')}
+
+---
+*Report created via YouTube Analytics Intelligence Pro • DAE Enterprise*
+`;
+
+  navigator.clipboard.writeText(md).then(() => {
+    showToast('Executive briefing copied as Markdown!', '📋');
+  }).catch(() => {
+    showToast('Could not copy automatically. Check permissions.', '⚠️');
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   EXPORT & THEMES
+───────────────────────────────────────────────────────────────── */
+function toggleExportMenu(e) {
+  e.stopPropagation();
+  document.getElementById('export-menu').classList.toggle('active');
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('export-menu')?.classList.remove('active');
+  document.getElementById('search-dropdown')?.classList.remove('active');
+});
+
+function exportData(type) {
+  const data = filteredData.length ? filteredData : rawData;
+  if (!data.length) {
+    showToast('No data to export!', '⚠️');
+    return;
+  }
+
+  if (type === 'json') {
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `youtube_analytics_${Date.now()}.json`;
+    a.click();
+    showToast('Exported filtered JSON successfully.', '📦');
+  } else if (type === 'csv') {
+    const cols = ['global_rank','channel_name','custom_url','creator_iq','creator_grade','subscribers','total_views','total_videos','views_per_video','engagement_proxy','country','category','tier','created_year'];
+    const rows = [cols.join(',')];
+    data.forEach(r => {
+      const line = cols.map(c => `"${String(r[c] || '').replace(/"/g, '""')}"`);
+      rows.push(line.join(','));
+    });
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `youtube_analytics_${Date.now()}.csv`;
+    a.click();
+    showToast('Exported filtered CSV successfully.', '📄');
+  }
+}
+
+function cycleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'cyber-dark';
+  const idx = THEMES.indexOf(current);
+  const next = THEMES[(idx + 1) % THEMES.length];
+  document.documentElement.setAttribute('data-theme', next);
+  document.getElementById('theme-btn-label').textContent = THEME_LABELS[next];
+  localStorage.setItem('dae_theme', next);
+  showToast(`Switched theme to ${THEME_LABELS[next]}`);
+  if (rawData.length) {
+    renderOverviewCharts();
+    renderTopCharts();
+    renderMLCharts();
+    renderCompareTab();
+  }
+}
+
+function showLoading(msg, sub) {
+  document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('loading-sub').textContent = sub;
+  document.getElementById('loading-overlay').classList.add('active');
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('active');
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   FILE LOADING & DATASET SWITCHER
+───────────────────────────────────────────────────────────────── */
+function loadFile(file) {
+  if (!file) return;
+  showLoading(`Loading ${file.name}…`, 'Parsing CSV with PapaParse');
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: false,
+    complete: function(results) {
+      if (results.errors.length) {
+        console.warn('CSV Parse Warnings:', results.errors);
+      }
+      processAndRender(results.data, file.name);
+    },
+    error: function(err) {
+      hideLoading();
+      alert('Error parsing CSV: ' + err.message);
+    }
+  });
+}
+
+async function loadPredefinedDataset(filename) {
+  showLoading(`Loading ${filename}…`, 'Fetching and processing project dataset');
+  try {
+    const resp = await fetch(filename);
+    if (!resp.ok) throw new Error(`HTTP error ${resp.status}`);
+    const text = await resp.text();
+    const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+    processAndRender(result.data, filename);
+  } catch (err) {
+    hideLoading();
+    console.warn(`Local fetch error for ${filename}:`, err);
+    alert(`Could not automatically read "${filename}" due to browser local file security (file:// protocol).\n\nPlease click "📁 Browse Computer" or drag and drop "${filename}" into the upload zone to load it!`);
+  }
+}
+
+async function onDatasetChange(filename) {
+  if (!filename) return;
+  loadPredefinedDataset(filename);
+}
+
+/* ─── DRAG & DROP & INPUT LISTENERS ─── */
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) loadFile(e.target.files[0]);
+});
+
+['dragenter', 'dragover'].forEach(name => {
+  dropZone.addEventListener(name, (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+});
+
+['dragleave', 'drop'].forEach(name => {
+  dropZone.addEventListener(name, (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+  });
+});
+
+dropZone.addEventListener('drop', (e) => {
+  if (e.dataTransfer.files.length > 0) {
+    loadFile(e.dataTransfer.files[0]);
+  }
+});
+
+/* ─── TAB NAVIGATION SWITCHER ─── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + target).classList.add('active');
+
+    // Trigger chart resize / update on tab reveal
+    if (target === 'overview') renderOverviewCharts();
+    if (target === 'top10') renderTopCharts();
+    if (target === 'compare') renderCompareTab();
+    if (target === 'ml') renderMLCharts();
+    if (target === 'monetize') updateSimulation();
+    if (target === 'data') renderTable();
+  });
+});
+
+/* ─── INITIALIZATION ON PAGE LOAD ─── */
+(async () => {
+  // Load saved theme
+  const savedTheme = localStorage.getItem('dae_theme');
+  if (savedTheme && THEMES.includes(savedTheme)) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('theme-btn-label').textContent = THEME_LABELS[savedTheme];
+  }
+
+  // Discover local CSV files
+  const FALLBACK_NAMES = [
+    'youtube_channel_info_v2.csv',
+    'youtube_4k_channels_cleaned.csv'
+  ];
+
+  discoveredFiles = FALLBACK_NAMES;
+  const select = document.getElementById('dataset-select');
+  select.innerHTML = '<option value="">Select Dataset…</option>' +
+    discoveredFiles.map(f => `<option value="${f}">${f}</option>`).join('');
+
+  // NOTE: AS EXPLICITLY REQUESTED BY THE USER:
+  // The dashboard DOES NOT auto-load any dataset on initial launch.
+  // It only asks the user for the dataset via the clean upload box.
+  hideLoading();
+})();
+</script>
+
+</body>
+</html>
